@@ -5,12 +5,12 @@ import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Victor;
 
 public class Hand {
-	static Victor left = new Victor(0);
-	static Victor right = new Victor(1);
+	private static Victor left = new Victor(0);
+	private static Victor right = new Victor(1);
 
-	static DoubleSolenoid grabber = new DoubleSolenoid(0, 1);
+	private static DoubleSolenoid grabber = new DoubleSolenoid(0, 1);
 
-	static double motorCommand;
+	private static double motorCommand;
 
 	public static void set(String state) {
 		switch (state) {
