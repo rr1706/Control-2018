@@ -8,74 +8,74 @@ import frc.team1706.robot.utilities.MathUtils;
 import frc.team1706.robot.utilities.PIDController;
 
 public class Arm {
-	static final double UPPERARM_LENGTH = 25.0;
-	static final double FOREARM_LENGTH = 31.0;
+	private static final double UPPERARM_LENGTH = 25.0;
+	private static final double FOREARM_LENGTH = 31.0;
 
-	static double SHOULDER_M = 1.1222;
-	static double SHOULDER_B = 2793;
+	private static double SHOULDER_M;
+	private static double SHOULDER_B;
 
-	static double SHOULDER_MIN = 0.0;
-	static double SHOULDER_MAX = 0.0;
+	private static double SHOULDER_MIN;
+	private static double SHOULDER_MAX;
 
-	static double ELBOW_M = 1.1222;
-	static double ELBOW_B = 3189;
+	private static double ELBOW_M;
+	private static double ELBOW_B;
 
-	static double ELBOW_MIN = 0.0;
-	static double ELBOW_MAX = 0.0;
+	private static double ELBOW_MIN;
+	private static double ELBOW_MAX;
 
-	static double WRIST_M = 1.7333;
-	static double WRIST_B = 590;
+	private static double WRIST_M;
+	private static double WRIST_B;
 
-	static double WRIST_MIN = 0.0;
-	static double WRIST_MAX = 0.0;
+	private static double WRIST_MIN;
+	private static double WRIST_MAX;
 
-	static final double speed = 5; //Inches per Second
+	private static final double speed = 5; //Inches per Second
 
-	static final double[] grabPoint = {38.462, -30.083};
-	static final double[] holdPoint = {28.755, 12.387};
-	static final double[] switchPoint = {30.933, 12.254};
-	static final double[] lScalePoint = {19.966, 15.955};
-	static final double[] mScalePoint = {24.364, 28.816};
-	static final double[] hScalePoint = {23.554, 40.764};
-	static final double[] behindPoint = {-11.734, 44.1};
-	static final double[] vaultPoint = {30.642, -31.97};
-	static final double[] climbPoint = {};
+	private static final double[] grabPoint = {38.462, -30.083};
+	private static final double[] holdPoint = {28.755, 12.387};
+	private static final double[] switchPoint = {30.933, 12.254};
+	private static final double[] lScalePoint = {19.966, 15.955};
+	private static final double[] mScalePoint = {24.364, 28.816};
+	private static final double[] hScalePoint = {23.554, 40.764};
+	private static final double[] behindPoint = {-11.734, 44.1};
+	private static final double[] vaultPoint = {30.642, -31.97};
+	private static final double[] climbPoint = {};
 
-	static VictorSP shoulderM;
-	static VictorSP elbowM;
-	static VictorSP wristM;
+	private static VictorSP shoulderM;
+	private static VictorSP elbowM;
+	private static VictorSP wristM;
 
-	static AnalogInput shoulderA;
-	static AnalogInput elbowA;
-	static AnalogInput wristA;
+	private static AnalogInput shoulderA;
+	private static AnalogInput elbowA;
+	private static AnalogInput wristA;
 
-	static double shoulderAngle = 0.0;
-	static double elbowAngle = 90.0;
-	static double wristAngle = 90.0;
+	private static double shoulderAngle = 0.0;
+	private static double elbowAngle = 90.0;
+	private static double wristAngle = 90.0;
 
-	static PIDController shoulderPID;
-	static PIDController elbowPID;
-	static PIDController wristPID;
+	private static PIDController shoulderPID;
+	private static PIDController elbowPID;
+	private static PIDController wristPID;
 
-	static double xTravel = holdPoint[0];
-	static double yTravel = holdPoint[1];
-	static  double wristSet = 90.0;
+	private static double xTravel = holdPoint[0];
+	private static double yTravel = holdPoint[1];
+	private static  double wristSet = 90.0;
 
-	static double xSetpoint = holdPoint[0];
-	static double ySetpoint = holdPoint[1];
+	private static double xSetpoint = holdPoint[0];
+	private static double ySetpoint = holdPoint[1];
 
-	static double max = 1.0;
+	private static double max = 1.0;
 
-	static int armCase = 0;
+	private static int armCase = 0;
 
-	static DigitalInput limitSwitch = new DigitalInput(0);
-	static boolean haveCube;
+	private static DigitalInput limitSwitch = new DigitalInput(0);
+	private static boolean haveCube;
 
-	static boolean prevB = false;
+	private static boolean prevB = false;
 
-	static boolean manual = false;
-	static int manualToggle = 0;
-	static boolean manualToggled = false;
+	private static boolean manual = false;
+	private static int manualToggle = 0;
+	private static boolean manualToggled = false;
 
 	public static void init() {
 		shoulderM = new VictorSP(0);
@@ -242,7 +242,9 @@ public class Arm {
 				yTravel += Math.signum(ySetpoint - yTravel) * speed / 50 * Math.abs(ySetpoint - yTravel) / max;
 			}
 
-			if (yTravel < -10.0) {
+			if (armCase == 18) {
+				updateWrist(1);
+			} else if (yTravel < -10.0) {
 				updateWrist(0);
 			} else if (xTravel < 0.0) {
 				updateWrist(3);
@@ -263,7 +265,6 @@ public class Arm {
 
 	}
 
-	//TODO set vault point
 	private static void updateWrist(int check) {
 		switch (check) {
 			case 0:
@@ -284,6 +285,23 @@ public class Arm {
 		wristPID.setInput(wristAngle);
 
 		wristM.set(wristPID.performPID());
+	}
+
+	public static void setOffsets(double sm, double sb, double sMin, double sMax, double em, double eb, double eMin, double eMax, double wm, double wb, double wMin, double wMax) {
+		SHOULDER_M = sm;
+		SHOULDER_B = sb;
+		SHOULDER_MIN = sMin;
+		SHOULDER_MAX = sMax;
+
+		ELBOW_M = em;
+		ELBOW_B = eb;
+		ELBOW_MIN = sMin;
+		ELBOW_MAX = sMax;
+
+		WRIST_M = wm;
+		WRIST_B = wb;
+		WRIST_MIN = wMin;
+		WRIST_MAX = wMax;
 	}
 
 	private static void setPoint(double x, double y) {
