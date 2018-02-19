@@ -29,7 +29,7 @@ public class Arm {
 	private static double WRIST_MIN;
 	private static double WRIST_MAX;
 
-	private static final double speed = 5; //Inches per Second
+	private static final double speed = 5.0; //Inches per Second
 
 	private static final double[] grabPoint = {38.462, -30.083};
 	private static final double[] holdPoint = {28.755, 12.387};
@@ -41,7 +41,7 @@ public class Arm {
 	private static final double[] vaultPoint = {30.642, -31.97};
 	private static final double[] climbPoint = {};
 
-	private static VictorSP shoulderM;
+	public static VictorSP shoulderM;
 	private static VictorSP elbowM;
 	private static VictorSP wristM;
 
@@ -66,7 +66,7 @@ public class Arm {
 
 	private static double max = 1.0;
 
-	private static int armCase = 0;
+	public static int armCase = 0;
 
 	private static DigitalInput limitSwitch = new DigitalInput(0);
 	private static boolean haveCube;
@@ -141,7 +141,7 @@ public class Arm {
 					armCase = 3;
 				} else if (Robot.xbox2.A() && Robot.xbox2.LStickY() < -0.5) {
 					armCase = 6;
-				} else if (Robot.xbox2.A() && Robot.xbox2.LStickX() > 0.5) {
+				} else if (Robot.xbox2.A() && Robot.xbox2.LStickY() > 0.5) {
 					armCase = 12;
 				} else if (Robot.xbox2.A() && Robot.xbox2.LStickX() < -0.5) {
 					armCase = 15;
@@ -183,10 +183,8 @@ public class Arm {
 
 					if (Robot.xbox2.A() && !haveCube) {
 						Hand.set("Pull");
-					} else if (!Robot.xbox2.B()) {
+					} else if (!Robot.xbox2.B() || haveCube) {
 						armCase = 0;
-					} else {
-						Hand.set("Hold");
 					}
 
 					break;
@@ -224,6 +222,12 @@ public class Arm {
 				case 18:
 					xSetpoint = vaultPoint[0];
 					ySetpoint = vaultPoint[1];
+
+					break;
+
+				case 21:
+					xSetpoint = climbPoint[0];
+					ySetpoint = climbPoint[1];
 
 					break;
 			}

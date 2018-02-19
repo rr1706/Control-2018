@@ -35,7 +35,8 @@ public class Robot extends TimedRobot {
 //	private Compressor compressor;
 
 	private XboxController xbox1 = new XboxController(0);
-	public static XboxController xbox2 = new XboxController(0);
+	public static XboxController xbox2 = new XboxController(1);
+	private static CustomController box = new CustomController(2);
 
 	private int autonomousChoice;
 	private JetsonServer jet;
@@ -112,7 +113,7 @@ public class Robot extends TimedRobot {
 	private Properties application = new Properties();
 	private File offsets = new File("/home/lvuser/SWERVE_OFFSET.txt");
 
-	AnalogInput test = new AnalogInput(0);
+	private int armController = 0;
 
 	private void keepAngle() {
 		// LABEL keepAngle
@@ -282,8 +283,15 @@ public class Robot extends TimedRobot {
 	public void autonomousInit() {
 		// LABEL autonomous init
 		jet.setAuto(); // this line is important because it does clock synchronization
+		String gameData = null;
 
-		String gameData = m_ds.getGameSpecificMessage();
+		// Try and get the game data for 1.5 seconds
+		int c = 0;
+		while (gameData == null && c < 75) {
+			gameData = m_ds.getGameSpecificMessage();
+			c++;
+		}
+
 		char switchSide = gameData.charAt(0);
 		char scaleSide = gameData.charAt(1);
 
@@ -409,9 +417,21 @@ public class Robot extends TimedRobot {
 				/*
 				 * 0 = translate speed, 1 = rotate speed, 2 = direction to translate, 3 = direction to face,
 				 * 4 = distance(in), 6 = moonSTR, 7 = moonRCW, 8 = moonAngle, 10 = time out(seconds), 11 = check for collision,
-				 * 12 = imu offset, create new
+				 * 12 = imu offset, 13 = arm position, 14 hand position
 				 */
-				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance();
+				Arm.armCase = (int) commands[arrayIndex][13];
+
+				if ((int) commands[arrayIndex][14] == 0) {
+					Hand.set("Open");
+				} else if ((int) commands[arrayIndex][14] == 1) {
+					Hand.set("Pull");
+				} else if ((int) commands[arrayIndex][14] == 2) {
+					Hand.set("Hold");
+				} else if ((int) commands[arrayIndex][14] == 3) {
+					Hand.set("Push");
+				}
+
+					currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance();
 
 				System.out.println(commands[arrayIndex][0]);
 
@@ -613,7 +633,7 @@ public class Robot extends TimedRobot {
 			if (wheelRamp < 1.0) {
 				rampRate = currentRampTime - prevRampTime;
 
-				//rampRate is x if this is set to a different equation later
+				// rampRate is x if this is set to a different equation
 				wheelRamp = rampRate;
 			} else {
 				wheelRamp = 1.0;
@@ -690,7 +710,31 @@ public class Robot extends TimedRobot {
 		}
 
 		keepAngle();
-		Arm.update();
+
+		switch (armController) {
+			case 0:
+				Arm.update();
+				if (box.TopLeftButton()) {
+					armController = 1;
+				}
+				break;
+
+			case 1:
+				if (box.TopLeftButton()) {
+					Arm.armCase = 21;
+					Arm.update();
+				} else if (box.LStickUp()) {
+					Arm.shoulderM.set(0.5);
+				} else if (box.LStickDown()) {
+					Arm.shoulderM.set(-0.5);
+				} else if (box.BottomLeftButton()) {
+//					Winch.climb();
+				}
+				if (xbox2.A() || xbox2.B()) {
+					armController = 0;
+				}
+				break;
+		}
 
 		if (robotBackwards) {
 			driveTrain.drive(new Vector(-STR, -FWD), -RCW); // x = str, y = fwd, rotation = rcw
