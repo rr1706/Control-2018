@@ -2,7 +2,7 @@ plugins {
     id "java"
     id "eclipse"
     id "idea"
-    id "jaci.openrio.gradle.GradleRIO" version "2018.01.22"
+    id "jaci.openrio.gradle.GradleRIO" version "2018.02.17"
 }
 
 def TEAM = 1706
@@ -43,4 +43,8 @@ jar {
 
 task wrapper(type: Wrapper) {
     gradleVersion = '4.4'
+}
+
+telemetry {
+    reportTelemetry = false
 }
