@@ -728,7 +728,7 @@ public class Robot extends TimedRobot {
 				} else if (box.LStickDown()) {
 					Arm.shoulderM.set(-0.5);
 				} else if (box.BottomLeftButton()) {
-//					Winch.climb();
+					Winch.set(0.5);
 				}
 				if (xbox2.A() || xbox2.B()) {
 					armController = 0;
