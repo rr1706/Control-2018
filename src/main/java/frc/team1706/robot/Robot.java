@@ -774,6 +774,11 @@ public class Robot extends TimedRobot {
 
 		System.out.println(xbox1.DPad());
 
+		SmartDashboard.putNumber("FL Angle", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).getAngle());
+		SmartDashboard.putNumber("BL Angle", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getAngle());
+		SmartDashboard.putNumber("BR Angle", SwerveDrivetrain.swerveModules.get(WheelType.BACK_RIGHT).getAngle());
+		SmartDashboard.putNumber("FR Angle", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getAngle());
+
 		// Move a single motor from the drivetrain depending on Dpad and right stick
 		if (dx == 0) {
 			SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).setDirectTranslateCommand(speed);
