@@ -78,9 +78,9 @@ public class Arm {
 	private static boolean manualToggled = false;
 
 	public static void init() {
-		shoulderM = new VictorSP(0);
-		elbowM = new VictorSP(1);
-		wristM = new VictorSP(2);
+		shoulderM = new VictorSP(4);
+		elbowM = new VictorSP(5);
+		wristM = new VictorSP(6);
 
 		shoulderA = new AnalogInput(0);
 		elbowA = new AnalogInput(1);

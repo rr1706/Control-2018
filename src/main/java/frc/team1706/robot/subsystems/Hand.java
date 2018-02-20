@@ -5,8 +5,8 @@ import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Victor;
 
 public class Hand {
-	private static Victor left = new Victor(0);
-	private static Victor right = new Victor(1);
+	private static Victor left = new Victor(7);
+	private static Victor right = new Victor(8);
 
 	private static DoubleSolenoid grabber = new DoubleSolenoid(0, 1);
 
