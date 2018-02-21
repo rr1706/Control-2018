@@ -38,6 +38,7 @@ public class IMU {
 	public double getAngle() {
 		//This returns degrees (0 to 360)
 		return MathUtils.resolveDeg(ahrs.getYaw() + offset);
+//		return 0;
 	}
 
 	public static double getVelocity() {

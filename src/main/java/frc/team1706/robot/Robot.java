@@ -39,7 +39,7 @@ public class Robot extends TimedRobot {
 	private static CustomController box = new CustomController(2);
 
 	private int autonomousChoice;
-	private JetsonServer jet;
+//	private JetsonServer jet;
 	private Thread t;
 	private SwerveDrivetrain driveTrain;
 	private IMU imu;
@@ -166,7 +166,7 @@ public class Robot extends TimedRobot {
 	private void loadOffsets() {
 		// LABEL load offsets
 
-		// Set the offset of each wheel from a file on the roborio
+		// Set the offset of each wheapel from a file on the roborio
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).setOffset(Double.parseDouble(application.getProperty("front_right_offset", "0")));
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).setOffset(Double.parseDouble(application.getProperty("front_left_offset", "0")));
 		SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).setOffset(Double.parseDouble(application.getProperty("back_left_offset", "0")));
@@ -250,14 +250,14 @@ public class Robot extends TimedRobot {
 		log = new RRLogger();
 
 		// Connect to jetson
-		try {
-			jet = new JetsonServer((short) 5800, (short) 5801);
-			t = new Thread(jet);
-			t.start();
-			jet.setDisabled();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+//		try {
+//			jet = new JetsonServer((short) 5800, (short) 5801);
+//			t = new Thread(jet);
+//			t.start();
+//			jet.setDisabled();
+//		} catch (IOException e) {
+//			throw new RuntimeException(e);
+//		}
 
 		driveTrain = new SwerveDrivetrain();
 		loadOffsets();
@@ -282,7 +282,7 @@ public class Robot extends TimedRobot {
 
 	public void autonomousInit() {
 		// LABEL autonomous init
-		jet.setAuto(); // this line is important because it does clock synchronization
+//		jet.setAuto(); // this line is important because it does clock synchronization
 		String gameData = null;
 
 		// Try and get the game data for 1.5 seconds
@@ -744,7 +744,7 @@ public class Robot extends TimedRobot {
 	}
 
 	public void disabledInit() {
-		jet.setDisabled();
+//		jet.setDisabled();
 		autoMove = 0;
 
 		// When robot is turned on, disabledInit is called once
@@ -764,20 +764,16 @@ public class Robot extends TimedRobot {
 	 */
 	public void testPeriodic() {
 		// LABEL test
-//		LiveWindow.run();
-
 		double speed = (xbox1.RStickX() * 0.3);
 
 		if (xbox1.DPad() != -1) {
 			dx = xbox1.DPad();
 		}
 
-		System.out.println(xbox1.DPad());
-
-		SmartDashboard.putNumber("FL Angle", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).getAngle());
-		SmartDashboard.putNumber("BL Angle", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getAngle());
-		SmartDashboard.putNumber("BR Angle", SwerveDrivetrain.swerveModules.get(WheelType.BACK_RIGHT).getAngle());
-		SmartDashboard.putNumber("FR Angle", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getAngle());
+		System.out.println("FL Angle: " + MathUtils.resolveDeg(SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).getAngle()));
+		System.out.println("BL Angle: " + MathUtils.resolveDeg(SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getAngle()));
+		System.out.println("BR Angle: " + MathUtils.resolveDeg(SwerveDrivetrain.swerveModules.get(WheelType.BACK_RIGHT).getAngle()));
+		System.out.println("FR Angle: " + MathUtils.resolveDeg(SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getAngle()));
 
 		// Move a single motor from the drivetrain depending on Dpad and right stick
 		if (dx == 0) {

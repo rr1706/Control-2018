@@ -3,6 +3,7 @@ package frc.team1706.robot.subsystems;
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.VictorSP;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.team1706.robot.Robot;
 import frc.team1706.robot.utilities.MathUtils;
 import frc.team1706.robot.utilities.PIDController;
@@ -73,7 +74,7 @@ public class Arm {
 
 	private static boolean prevB = false;
 
-	private static boolean manual = false;
+	private static boolean manual = true;
 	private static int manualToggle = 0;
 	private static boolean manualToggled = false;
 
@@ -113,6 +114,10 @@ public class Arm {
 		shoulderAngle = shoulderA.getValue();
 		elbowAngle = elbowA.getValue();
 		wristAngle = wristA.getValue();
+
+		SmartDashboard.putNumber("Shoulder AngleDeg", (shoulderAngle-SHOULDER_B)/SHOULDER_M);
+		SmartDashboard.putNumber("Elbow AngleDeg", (elbowAngle-ELBOW_B)/ELBOW_M);
+		SmartDashboard.putNumber("Wrist AngleDeg", (wristAngle-WRIST_B)/WRIST_M);
 
 		switch (manualToggle) {
 			case 0:
@@ -261,10 +266,12 @@ public class Arm {
 
 		shoulderM.set(Robot.xbox2.LStickY());
 		elbowM.set(Robot.xbox2.RStickY());
-		if (Math.abs(Robot.xbox2.LTrig()) > 0.6) {
+		if (Math.abs(Robot.xbox2.LTrig()) > 0.06) {
 			wristM.set(Robot.xbox2.LTrig());
-		} else if (Math.abs(Robot.xbox2.RTrig()) > 0.6) {
+		} else if (Math.abs(Robot.xbox2.RTrig()) > 0.06) {
 			wristM.set(-Robot.xbox2.RTrig());
+		} else {
+			wristM.set(0.0);
 		}
 
 	}
