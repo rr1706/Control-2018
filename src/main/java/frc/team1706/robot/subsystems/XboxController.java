@@ -52,7 +52,7 @@ public class XboxController extends Joystick {
 	}
 
 	public double LStickX() {
-		if (stick.getRawAxis(0) > deadband) {
+		if (Math.abs(stick.getRawAxis(0)) > deadband) {
 			return stick.getRawAxis(0);
 		} else {
 			return 0.0;
@@ -60,7 +60,7 @@ public class XboxController extends Joystick {
 	}
 
 	public double LStickY() {
-		if (stick.getRawAxis(1) > deadband) {
+		if (Math.abs(stick.getRawAxis(1)) > deadband) {
 			return stick.getRawAxis(1);
 		} else {
 			return 0.0;
@@ -76,7 +76,7 @@ public class XboxController extends Joystick {
 	}
 
 	public double RStickX() {
-		if (stick.getRawAxis(4) > deadband) {
+		if (Math.abs(stick.getRawAxis(4)) > deadband) {
 			return stick.getRawAxis(4);
 		} else {
 			return 0.0;
@@ -84,7 +84,7 @@ public class XboxController extends Joystick {
 	}
 
 	public double RStickY() {
-		if (stick.getRawAxis(5) > deadband) {
+		if (Math.abs(stick.getRawAxis(5)) > deadband) {
 			return stick.getRawAxis(5);
 		} else {
 			return 0.0;
