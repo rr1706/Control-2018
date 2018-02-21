@@ -185,10 +185,8 @@ public class Robot extends TimedRobot {
 
 		Arm.setOffsets(Double.parseDouble(application.getProperty("sm", "0")), Double.parseDouble(application.getProperty("sb", "0")),
 						Double.parseDouble(application.getProperty("sMin", "0")), Double.parseDouble(application.getProperty("sMax", "0")),
-							Double.parseDouble(application.getProperty("em", "0")), Double.parseDouble(application.getProperty("eb", "0")),
-							Double.parseDouble(application.getProperty("eMin", "0")), Double.parseDouble(application.getProperty("eMax", "0")),
-								Double.parseDouble(application.getProperty("wm", "0")), Double.parseDouble(application.getProperty("wb", "0")),
-								Double.parseDouble(application.getProperty("wMin", "0")), Double.parseDouble(application.getProperty("wMax", "0")));
+							Double.parseDouble(application.getProperty("wm", "0")), Double.parseDouble(application.getProperty("wb", "0")),
+							Double.parseDouble(application.getProperty("wMin", "0")), Double.parseDouble(application.getProperty("wMax", "0")));
 
 		robotBackwards = Boolean.parseBoolean(application.getProperty("robot_backwards", "false"));
 	}

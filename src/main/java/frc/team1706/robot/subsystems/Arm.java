@@ -9,20 +9,11 @@ import frc.team1706.robot.utilities.MathUtils;
 import frc.team1706.robot.utilities.PIDController;
 
 public class Arm {
-	private static final double UPPERARM_LENGTH = 25.0;
-	private static final double FOREARM_LENGTH = 31.0;
-
 	private static double SHOULDER_M;
 	private static double SHOULDER_B;
 
 	private static double SHOULDER_MIN;
 	private static double SHOULDER_MAX;
-
-	private static double ELBOW_M;
-	private static double ELBOW_B;
-
-	private static double ELBOW_MIN;
-	private static double ELBOW_MAX;
 
 	private static double WRIST_M;
 	private static double WRIST_B;
@@ -32,47 +23,35 @@ public class Arm {
 
 	private static final double speed = 5.0; //Inches per Second
 
-	private static final double[] grabPoint = {38.462, -30.083};
-	private static final double[] holdPoint = {28.755, 12.387};
-	private static final double[] switchPoint = {30.933, 12.254};
-	private static final double[] lScalePoint = {19.966, 15.955};
-	private static final double[] mScalePoint = {24.364, 28.816};
-	private static final double[] hScalePoint = {23.554, 40.764};
-	private static final double[] behindPoint = {-11.734, 44.1};
-	private static final double[] vaultPoint = {30.642, -31.97};
-	private static final double[] climbPoint = {};
+	private static final double grabPoint = 5;
+	private static final double holdPoint = 5;
+	private static final double switchPoint = 5;
+	private static final double lScalePoint = 5;
+	private static final double mScalePoint = 5;
+	private static final double hScalePoint = 5;
+	private static final double behindPoint = 5;
+	private static final double vaultPoint = 5;
+	private static final double climbPoint = 5;
 
 	public static VictorSP shoulderM;
-	private static VictorSP elbowM;
 	private static VictorSP wristM;
 
 	private static AnalogInput shoulderA;
-	private static AnalogInput elbowA;
 	private static AnalogInput wristA;
 
 	private static double shoulderAngle = 0.0;
-	private static double elbowAngle = 90.0;
 	private static double wristAngle = 90.0;
 
 	private static PIDController shoulderPID;
-	private static PIDController elbowPID;
 	private static PIDController wristPID;
 
-	private static double xTravel = holdPoint[0];
-	private static double yTravel = holdPoint[1];
+	private static  double shoulderSet = 0.0;
 	private static  double wristSet = 90.0;
-
-	private static double xSetpoint = holdPoint[0];
-	private static double ySetpoint = holdPoint[1];
-
-	private static double max = 1.0;
 
 	public static int armCase = 0;
 
 	private static DigitalInput limitSwitch = new DigitalInput(0);
 	private static boolean haveCube;
-
-	private static boolean prevB = false;
 
 	private static boolean manual = true;
 	private static int manualToggle = 0;
@@ -80,11 +59,9 @@ public class Arm {
 
 	public static void init() {
 		shoulderM = new VictorSP(4);
-		elbowM = new VictorSP(5);
 		wristM = new VictorSP(6);
 
 		shoulderA = new AnalogInput(0);
-		elbowA = new AnalogInput(1);
 		wristA = new AnalogInput(2);
 
 		shoulderPID = new PIDController(0.06, 0.0, 0.0);
@@ -93,13 +70,6 @@ public class Arm {
 		shoulderPID.setContinuous(false);
 		shoulderPID.setTolerance(0.2);
 		shoulderPID.enable();
-
-		elbowPID = new PIDController(0.022, 0.0, 0.0);
-		elbowPID.setInputRange(ELBOW_MIN, ELBOW_MAX);
-		elbowPID.setOutputRange(-1.0, 1.0);
-		elbowPID.setContinuous(false);
-		elbowPID.setTolerance(0.2);
-		elbowPID.enable();
 
 		wristPID = new PIDController(0.022, 0.0, 0.0);
 		wristPID.setInputRange(WRIST_MIN, WRIST_MAX);
@@ -112,11 +82,9 @@ public class Arm {
 	public static void update() {
 		haveCube = limitSwitch.get();
 		shoulderAngle = shoulderA.getValue();
-		elbowAngle = elbowA.getValue();
 		wristAngle = wristA.getValue();
 
 		SmartDashboard.putNumber("Shoulder AngleDeg", (shoulderAngle-SHOULDER_B)/SHOULDER_M);
-		SmartDashboard.putNumber("Elbow AngleDeg", (elbowAngle-ELBOW_B)/ELBOW_M);
 		SmartDashboard.putNumber("Wrist AngleDeg", (wristAngle-WRIST_B)/WRIST_M);
 
 		switch (manualToggle) {
@@ -167,12 +135,9 @@ public class Arm {
 				}
 			}
 
-			prevB = Robot.xbox2.B();
-
 			switch (armCase) {
 				case 0:
-					xSetpoint = holdPoint[0];
-					ySetpoint = holdPoint[1];
+					shoulderSet = holdPoint;
 
 					Hand.set("Hold");
 					updateWrist(2);
@@ -183,8 +148,7 @@ public class Arm {
 					break;
 
 				case 1:
-					xSetpoint = grabPoint[0];
-					ySetpoint = grabPoint[1];
+					shoulderSet = grabPoint;
 
 					if (Robot.xbox2.A() && !haveCube) {
 						Hand.set("Pull");
@@ -195,77 +159,56 @@ public class Arm {
 					break;
 
 				case 3:
-					xSetpoint = switchPoint[0];
-					ySetpoint = switchPoint[1];
+					shoulderSet = switchPoint;
 
 					break;
 
 				case 6:
-					xSetpoint = lScalePoint[0];
-					ySetpoint = lScalePoint[1];
+					shoulderSet = lScalePoint;
 
 					break;
 
 				case 9:
-					xSetpoint = mScalePoint[0];
-					ySetpoint = mScalePoint[1];
+					shoulderSet = mScalePoint;
 
 					break;
 
 				case 12:
-					xSetpoint = hScalePoint[0];
-					ySetpoint = hScalePoint[1];
+					shoulderSet = hScalePoint;
 
 					break;
 
 				case 15:
-					xSetpoint = behindPoint[0];
-					ySetpoint = behindPoint[1];
+					shoulderSet = behindPoint;
 
 					break;
 
 				case 18:
-					xSetpoint = vaultPoint[0];
-					ySetpoint = vaultPoint[1];
+					shoulderSet = vaultPoint;
 
 					break;
 
 				case 21:
-					xSetpoint = climbPoint[0];
-					ySetpoint = climbPoint[1];
+					shoulderSet = climbPoint;
 
 					break;
 			}
 
-			if (Math.abs(xSetpoint - xTravel) > Math.abs(ySetpoint - yTravel)) {
-				max = Math.abs(xSetpoint - xTravel);
-			} else {
-				max = Math.abs(ySetpoint - yTravel);
-			}
-
-			if (xTravel != xSetpoint) {
-				xTravel += Math.signum(xSetpoint - xTravel) * speed / 50 * Math.abs(xSetpoint - xTravel) / max;
-			}
-
-			if (yTravel != ySetpoint) {
-				yTravel += Math.signum(ySetpoint - yTravel) * speed / 50 * Math.abs(ySetpoint - yTravel) / max;
-			}
-
 			if (armCase == 18) {
 				updateWrist(1);
-			} else if (yTravel < -10.0) {
+			} else if (shoulderAngle < -10.0) {
 				updateWrist(0);
-			} else if (xTravel < 0.0) {
+			} else if (shoulderAngle > 170.0) {
 				updateWrist(3);
 			} else {
 				updateWrist(1);
 			}
 
-			setPoint(xTravel, yTravel);
+			shoulderPID.setSetpoint(shoulderSet);
+			shoulderM.set(shoulderPID.performPID());
 		}
 
 		shoulderM.set(Robot.xbox2.LStickY());
-		elbowM.set(Robot.xbox2.RStickY());
 		if (Math.abs(Robot.xbox2.LTrig()) > 0.06) {
 			wristM.set(Robot.xbox2.LTrig());
 		} else if (Math.abs(Robot.xbox2.RTrig()) > 0.06) {
@@ -279,16 +222,16 @@ public class Arm {
 	private static void updateWrist(int check) {
 		switch (check) {
 			case 0:
-				wristSet = 90 - MathUtils.radToDeg(shoulderAngle + elbowAngle);
+				wristSet = 90 - MathUtils.radToDeg(shoulderAngle);
 				break;
 			case 1:
-				wristSet = 360 - MathUtils.radToDeg(shoulderAngle + elbowAngle);
+				wristSet = 360 - MathUtils.radToDeg(shoulderAngle);
 				break;
 			case 2:
 				wristSet = 90;
 				break;
 			case 3:
-				wristSet = 180 - MathUtils.radToDeg(shoulderAngle + elbowAngle);
+				wristSet = 180 - MathUtils.radToDeg(shoulderAngle);
 				break;
 		}
 
@@ -298,61 +241,15 @@ public class Arm {
 		wristM.set(wristPID.performPID());
 	}
 
-	public static void setOffsets(double sm, double sb, double sMin, double sMax, double em, double eb, double eMin, double eMax, double wm, double wb, double wMin, double wMax) {
+	public static void setOffsets(double sm, double sb, double sMin, double sMax, double wm, double wb, double wMin, double wMax) {
 		SHOULDER_M = sm;
 		SHOULDER_B = sb;
 		SHOULDER_MIN = sMin;
 		SHOULDER_MAX = sMax;
 
-		ELBOW_M = em;
-		ELBOW_B = eb;
-		ELBOW_MIN = sMin;
-		ELBOW_MAX = sMax;
-
 		WRIST_M = wm;
 		WRIST_B = wb;
 		WRIST_MIN = wMin;
 		WRIST_MAX = wMax;
-	}
-
-	private static void setPoint(double x, double y) {
-		double shoulderCommand = 0.0;
-		double elbowCommand = 0.0;
-
-		double[] commands = armAngles(x, y, UPPERARM_LENGTH, FOREARM_LENGTH);
-
-		shoulderCommand = commands[0];
-		elbowCommand = commands[1];
-
-		shoulderPID.setInput(shoulderAngle);
-		elbowPID.setInput(elbowAngle);
-
-		shoulderPID.setSetpoint(SHOULDER_M * shoulderCommand + SHOULDER_B);
-		elbowPID.setSetpoint(ELBOW_M * elbowCommand + ELBOW_B);
-
-		shoulderM.set(-shoulderPID.performPID());
-		elbowM.set(-elbowPID.performPID());
-	}
-
-	private static double lawOfCosines(double a, double b, double c) {
-		return Math.acos((a*a + b*b - c*c) / (2*a*b));
-	}
-
-	private static double armDistance(double x, double y) {
-		return Math.sqrt(x*x + y*y);
-	}
-
-	private static double[] armAngles(double x, double y, double len1, double len2) {
-		double dist = armDistance(x, y);
-		double d1 = Math.atan2(y, x);
-		double d2 = lawOfCosines(dist, len1, len2);
-		double a1 = d1 + d2;
-		double a2 = lawOfCosines(len1, len2, dist);
-
-		double[] values = new double[2];
-		values[0] = a1;
-		values[1] = a2;
-
-		return values;
 	}
 }
