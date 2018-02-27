@@ -206,15 +206,17 @@ public class Arm {
 
 			shoulderPID.setSetpoint(shoulderSet);
 			shoulderM.set(shoulderPID.performPID());
-		}
 
-		shoulderM.set(Robot.xbox2.LStickY());
-		if (Math.abs(Robot.xbox2.LTrig()) > 0.06) {
-			wristM.set(Robot.xbox2.LTrig());
-		} else if (Math.abs(Robot.xbox2.RTrig()) > 0.06) {
-			wristM.set(-Robot.xbox2.RTrig());
 		} else {
-			wristM.set(0.0);
+
+			shoulderM.set(Robot.xbox2.LStickY());
+			if (Math.abs(Robot.xbox2.LTrig()) > 0.06) {
+				wristM.set(Robot.xbox2.LTrig());
+			} else if (Math.abs(Robot.xbox2.RTrig()) > 0.06) {
+				wristM.set(-Robot.xbox2.RTrig());
+			} else {
+				wristM.set(0.0);
+			}
 		}
 
 	}
