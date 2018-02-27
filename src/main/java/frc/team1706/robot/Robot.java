@@ -429,7 +429,7 @@ public class Robot extends TimedRobot {
 					Hand.set("Push");
 				}
 
-					currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance();
+				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance();
 
 				System.out.println(commands[arrayIndex][0]);
 
