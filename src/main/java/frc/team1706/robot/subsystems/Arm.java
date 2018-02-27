@@ -21,7 +21,7 @@ public class Arm {
 	private static double WRIST_MIN;
 	private static double WRIST_MAX;
 
-	private static final double speed = 5.0; //Inches per Second
+	private static int lsPort;
 
 	private static final double grabPoint = 5;
 	private static final double holdPoint = 5;
@@ -50,7 +50,7 @@ public class Arm {
 
 	public static int armCase = 0;
 
-	private static DigitalInput limitSwitch = new DigitalInput(0);
+	private static DigitalInput limitSwitch;
 	private static boolean haveCube;
 
 	private static boolean manual = true;
@@ -77,6 +77,8 @@ public class Arm {
 		wristPID.setContinuous(false);
 		wristPID.setTolerance(0.2);
 		wristPID.enable();
+
+		limitSwitch = new DigitalInput(lsPort);
 	}
 
 	public static void update() {
@@ -243,7 +245,7 @@ public class Arm {
 		wristM.set(wristPID.performPID());
 	}
 
-	public static void setOffsets(double sm, double sb, double sMin, double sMax, double wm, double wb, double wMin, double wMax) {
+	public static void setOffsets(double sm, double sb, double sMin, double sMax, double wm, double wb, double wMin, double wMax, int lsP) {
 		SHOULDER_M = sm;
 		SHOULDER_B = sb;
 		SHOULDER_MIN = sMin;
@@ -253,5 +255,7 @@ public class Arm {
 		WRIST_B = wb;
 		WRIST_MIN = wMin;
 		WRIST_MAX = wMax;
+
+		lsPort = lsP;
 	}
 }
