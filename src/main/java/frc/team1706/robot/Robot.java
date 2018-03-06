@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Properties;
 
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.TimedRobot;
 import frc.team1706.robot.subsystems.*;
 //import frc.team1706.robot.subsystems.PowerPanel;
@@ -32,13 +33,14 @@ public class Robot extends TimedRobot {
 
 	private SendableChooser<Integer> autoChooser;
 
-//	private Compressor compressor;
+	private Compressor compressor;
 
 	private XboxController xbox1 = new XboxController(0);
 	public static XboxController xbox2 = new XboxController(1);
 	private static CustomController box = new CustomController(2);
 
 	private int autonomousChoice;
+	private int autoOrderChoice;
 //	private JetsonServer jet;
 	private Thread t;
 	private SwerveDrivetrain driveTrain;
@@ -216,8 +218,6 @@ public class Robot extends TimedRobot {
 	 */
 	public void robotInit() {
 		// LABEL robot init
-//		compressor = new Compressor(0);
-
 		// Load the wheel offset file from the roborio
 		try {
 			FileInputStream in = new FileInputStream(offsets);
@@ -226,13 +226,25 @@ public class Robot extends TimedRobot {
 			e.printStackTrace();
 		}
 
+		// Connect to jetson
+//		try {
+//			jet = new JetsonServer((short) 5800, (short) 5801);
+//			t = new Thread(jet);
+//			t.start();
+//			jet.setDisabled();
+//		} catch (IOException e) {
+//			throw new RuntimeException(e);
+//		}
+
+ 		compressor = new Compressor(0);
+
 		Time.start();
 
-		Arm.init();
-
 		SwerveDrivetrain.loadPorts();
+		driveTrain = new SwerveDrivetrain();
+		loadOffsets();
 
-		SmartDashboard.putNumber("2018 SRX Test", 0);
+		Arm.init();
 
 		SmartDashboard.putNumber("CompensateP", 0.02);
 		SmartDashboard.putNumber("CompensateI", 0.0);
@@ -246,20 +258,9 @@ public class Robot extends TimedRobot {
 		autoChooser.addObject("Right", 3);
 		SmartDashboard.putData("Autonomous Mode Chooser", autoChooser);
 
+		SmartDashboard.putNumber("AutoOrder", 0);
+
 		log = new RRLogger();
-
-		// Connect to jetson
-//		try {
-//			jet = new JetsonServer((short) 5800, (short) 5801);
-//			t = new Thread(jet);
-//			t.start();
-//			jet.setDisabled();
-//		} catch (IOException e) {
-//			throw new RuntimeException(e);
-//		}
-
-		driveTrain = new SwerveDrivetrain();
-		loadOffsets();
 
 		imu = new IMU();
 		imu.IMUInit();
@@ -298,6 +299,7 @@ public class Robot extends TimedRobot {
 		imu.reset();
 
 		autonomousChoice = autoChooser.getSelected();
+		autoOrderChoice = (int) SmartDashboard.getNumber("AutoOrder", 0);
 
 		String choice;
 
@@ -319,15 +321,19 @@ public class Robot extends TimedRobot {
 		} else if (autonomousChoice == 2) {
 			if (switchSide == 'L') {
 				if (scaleSide == 'L') {
-					choice = "/home/lvuser/LeftSwitchLScaleL.csv";
+					if (autoOrderChoice == 0) {
+						choice = "/home/lvuser/LeftSwitchL.csv";
+					} else {
+						choice = "/home/lvuser/LeftScaleL.csv";
+					}
 				} else {
-					choice = "/home/lvuser/LeftSwitchLScaleR.csv";
+					choice = "/home/lvuser/LeftSwitchL.csv";
 				}
 			} else {
 				if (scaleSide == 'L') {
-					choice = "/home/lvuser/LeftSwitchRScaleL.csv";
+					choice = "/home/lvuser/LeftScaleL.csv";
 				} else {
-					choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+					choice = "/home/lvuser/LeftMoveOnly.csv";
 				}
 			}
 
@@ -354,6 +360,7 @@ public class Robot extends TimedRobot {
 
 		time = 0;
 		arrayIndex = 0;
+		Arm.auto = true;
 
 		log.start();
 
@@ -403,7 +410,7 @@ public class Robot extends TimedRobot {
 				if (Time.get() > timeBase + SmartDashboard.getNumber("Autonomous Delay", 0)) {
 					autoMove = 1;
 				}
-				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance();
+				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance();
 				previousDistance = currentDistance;
 
 				break;
@@ -418,8 +425,11 @@ public class Robot extends TimedRobot {
 				 * 4 = distance(in), 6 = moonSTR, 7 = moonRCW, 8 = moonAngle, 10 = time out(seconds), 11 = check for collision,
 				 * 12 = imu offset, 13 = arm position, 14 hand position
 				 */
+				System.out.println("Arm Command: " + (int) commands[arrayIndex][13]);
 				Arm.armCase = (int) commands[arrayIndex][13];
 
+//				System.out.println("Hand Position: " + commands[arrayIndex][14]);
+//				System.out.println("Arm Position: " + commands[arrayIndex][13]);
 				if ((int) commands[arrayIndex][14] == 0) {
 					Hand.set("Open");
 				} else if ((int) commands[arrayIndex][14] == 1) {
@@ -428,11 +438,22 @@ public class Robot extends TimedRobot {
 					Hand.set("Hold");
 				} else if ((int) commands[arrayIndex][14] == 3) {
 					Hand.set("Push");
+				} else if ((int) commands[arrayIndex][14] == 4) {
+					Hand.set("OpenPull");
+				} else if ((int) commands[arrayIndex][14] == 5) {
+					Hand.set("Turbo");
 				}
 
-				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance();
+				if (commands[arrayIndex][15] == 1 && (Arm.haveCube)) {
+					collisionDone = true;
+					driveDone = true;
+					turnDone = true;
+					timeDone = true;
+				}
 
-				System.out.println(commands[arrayIndex][0]);
+				Arm.update();
+
+				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance();
 
 				tSpeed = commands[arrayIndex][0];
 				rSpeed = commands[arrayIndex][1];
@@ -552,6 +573,9 @@ public class Robot extends TimedRobot {
 
 		log.start();
 
+		Arm.armCase = 0;
+		Arm.auto = false;
+
 		imu.setOffset(imuOffset);
 
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).setID(1);
@@ -584,7 +608,7 @@ public class Robot extends TimedRobot {
 //		log.addPower("FL", PowerPanel.f());
 //		log.addPower("FR", PowerPanel.h());
 
-		SmartDashboard.putNumber("Distance", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance());
+		SmartDashboard.putNumber("Distance", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance());
 
 		if (xbox1.Back()) {
 			imu.reset(); // robot should be perpendicular to field when pressed.

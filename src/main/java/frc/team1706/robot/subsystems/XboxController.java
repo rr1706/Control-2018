@@ -4,7 +4,7 @@ import edu.wpi.first.wpilibj.Joystick;
 
 public class XboxController extends Joystick {
 	private Joystick stick;
-	private final double deadband = 0.066;
+	private final double deadband = 0.075;
 
 	public XboxController(int port) {
 		super(port);
