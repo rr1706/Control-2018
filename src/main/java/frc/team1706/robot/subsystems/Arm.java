@@ -119,7 +119,6 @@ public class Arm {
 		}
 
 		if (!manual) {
-			System.out.println("ArmCase1: " + armCase);
 			if (((armCase == 0 && !Robot.xbox2.B()) || armCase == 3 || armCase == 6 || armCase == 9 || armCase == 12 || armCase == 15 || armCase == 18 || armCase == 24) && !auto) {
 				if (Robot.xbox2.A() && Robot.xbox2.LStickX() > 0.5) {
 					armCase = 24;

@@ -425,7 +425,6 @@ public class Robot extends TimedRobot {
 				 * 4 = distance(in), 6 = moonSTR, 7 = moonRCW, 8 = moonAngle, 10 = time out(seconds), 11 = check for collision,
 				 * 12 = imu offset, 13 = arm position, 14 hand position
 				 */
-				System.out.println("Arm Command: " + (int) commands[arrayIndex][13]);
 				Arm.armCase = (int) commands[arrayIndex][13];
 
 //				System.out.println("Hand Position: " + commands[arrayIndex][14]);
@@ -772,7 +771,7 @@ public class Robot extends TimedRobot {
 
 		// When robot is turned on, disabledInit is called once
 		if (disabled < 1) {
-			System.out.println("Hello");
+			System.out.println("Hello, I am Otto");
 			disabled++;
 		} else {
 			System.out.println("Saving log file(s)");
