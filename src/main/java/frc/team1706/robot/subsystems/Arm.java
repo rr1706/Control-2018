@@ -236,6 +236,7 @@ public class Arm {
 
 				case 21:
 					shoulderSet = climbPoint;
+					updateWrist(3);
 
 					break;
 

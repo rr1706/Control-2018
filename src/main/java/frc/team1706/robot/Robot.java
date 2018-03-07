@@ -37,10 +37,11 @@ public class Robot extends TimedRobot {
 
 	private XboxController xbox1 = new XboxController(0);
 	public static XboxController xbox2 = new XboxController(1);
-	private static CustomController box = new CustomController(2);
+	private static XboxController endbox = new XboxController(2);
 
 	private int autonomousChoice;
 	private int autoOrderChoice;
+	private int autoForward;
 //	private JetsonServer jet;
 	private Thread t;
 	private SwerveDrivetrain driveTrain;
@@ -259,6 +260,7 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putData("Autonomous Mode Chooser", autoChooser);
 
 		SmartDashboard.putNumber("AutoOrder", 0);
+		SmartDashboard.putNumber("AutoForwardOnly", 0);
 
 		log = new RRLogger();
 
@@ -300,6 +302,7 @@ public class Robot extends TimedRobot {
 
 		autonomousChoice = autoChooser.getSelected();
 		autoOrderChoice = (int) SmartDashboard.getNumber("AutoOrder", 0);
+		autoForward = (int) SmartDashboard.getNumber("AutoForwardOnly", 0);
 
 		String choice;
 
@@ -321,19 +324,19 @@ public class Robot extends TimedRobot {
 		} else if (autonomousChoice == 2) {
 			if (switchSide == 'L') {
 				if (scaleSide == 'L') {
-					if (autoOrderChoice == 0) {
-						choice = "/home/lvuser/LeftSwitchL.csv";
+					if (autoOrderChoice == 1) {
+						choice = "/home/lvuser/LeftScaleFirst.csv";
 					} else {
-						choice = "/home/lvuser/LeftScaleL.csv";
+						choice = "/home/lvuser/LeftSwitchLScaleL.csv";
 					}
 				} else {
-					choice = "/home/lvuser/LeftSwitchL.csv";
+					choice = "/home/lvuser/LeftSwitchLScaleR.csv";
 				}
 			} else {
 				if (scaleSide == 'L') {
-					choice = "/home/lvuser/LeftScaleL.csv";
+					choice = "/home/lvuser/LeftSwitchRScaleL.csv";
 				} else {
-					choice = "/home/lvuser/LeftMoveOnly.csv";
+					choice = "/home/lvuser/LeftSwitchRScaleR.csv";
 				}
 			}
 
@@ -341,6 +344,7 @@ public class Robot extends TimedRobot {
 			if (switchSide == 'L') {
 				if (scaleSide == 'L') {
 					choice = "/home/lvuser/RightSwitchLScaleL.csv";
+
 				} else {
 					choice = "/home/lvuser/RightSwitchLScaleR.csv";
 				}
@@ -348,12 +352,20 @@ public class Robot extends TimedRobot {
 				if (scaleSide == 'L') {
 					choice = "/home/lvuser/RightSwitchRScaleL.csv";
 				} else {
-					choice = "/home/lvuser/RightSwitchRScaleR.csv";
+					if (autoOrderChoice == 1) {
+						choice = "/home/lvuser/RightScaleFirst.csv";
+					} else {
+						choice = "/home/lvuser/RightSwitchRScaleR.csv";
+					}
 				}
 			}
 
 		} else {
-			choice = "/home/lvuser/Stopped.csv";
+			choice = "/home/lvuser/Forward.csv";
+		}
+
+		if (autoForward == 1) {
+			choice = "/home/lvuser/Forward.csv";
 		}
 
 		SmartDashboard.putString("Autonomous File", choice);
@@ -736,21 +748,24 @@ public class Robot extends TimedRobot {
 		switch (armController) {
 			case 0:
 				Arm.update();
-				if (box.TopLeftButton()) {
+				if (endbox.A()) {
 					armController = 1;
 				}
 				break;
 
 			case 1:
-				if (box.TopLeftButton()) {
+				if (endbox.A()) {
 					Arm.armCase = 21;
 					Arm.update();
-				} else if (box.LStickUp()) {
-					Arm.shoulderM.set(0.5);
-				} else if (box.LStickDown()) {
-					Arm.shoulderM.set(-0.5);
-				} else if (box.BottomLeftButton()) {
-					Winch.set(0.5);
+				} else if (Math.abs(endbox.LStickY()) > 0.1) {
+					Arm.shoulderM.set(endbox.LStickY());
+				} else if (endbox.Y()) {
+					Arm.armCase = 0;
+					Arm.update();
+				}
+
+				if (Math.abs(endbox.RStickY()) > 0.1) {
+					Winch.set(endbox.RStickY());
 				}
 				if (xbox2.A() || xbox2.B()) {
 					armController = 0;
