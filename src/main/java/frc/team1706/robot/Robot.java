@@ -205,7 +205,6 @@ public class Robot extends TimedRobot {
 		SwerveCompensate.setInput(imu.getAngle());
 		SwerveCompensate.setSetpoint(angle);
 
-		// FIXME try having move to next step immediately, like old code or just use this part for keeping straight and make new for only rotation
 		SwerveCompensate.setTolerance(7);
 		if (!SwerveCompensate.onTarget()) {
 			SwerveCompensate.setPID(0.013, SmartDashboard.getNumber("CompensateI", 0.0), SmartDashboard.getNumber("CompensateD", 0.0));
@@ -470,10 +469,10 @@ public class Robot extends TimedRobot {
 				 * 4 = distance(in), 6 = moonSTR, 7 = moonRCW, 8 = moonAngle, 10 = time out(seconds), 11 = check for collision,
 				 * 12 = imu offset, 13 = arm position, 14 hand position
 				 */
+				//Note: use moonRCW to rotate robot
+
 				Arm.armCase = (int) commands[arrayIndex][13];
 
-//				System.out.println("Hand Position: " + commands[arrayIndex][14]);
-//				System.out.println("Arm Position: " + commands[arrayIndex][13]);
 				if ((int) commands[arrayIndex][14] == 0) {
 					Hand.set("Open");
 				} else if ((int) commands[arrayIndex][14] == 1) {
@@ -637,10 +636,10 @@ public class Robot extends TimedRobot {
 		autonomous = false;
 
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
+		SmartDashboard.putNumber("Shoulder Amps", PowerPanel.three());
 
 		xbox1.setDeadband(0.075);
 		xbox2.setDeadband(0.12);
-//		endbox.setDeadband(0.1);
 
 		// calibration from smartdashboard
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).setOffset(SmartDashboard.getNumber("FR offset: ", 0));
