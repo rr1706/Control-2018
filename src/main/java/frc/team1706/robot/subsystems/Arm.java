@@ -23,16 +23,16 @@ public class Arm {
 
 	private static int lsPort;
 
-	private static final double grabPoint = -49.0;
-	private static final double holdPoint = -56.0;
-	private static final double switchPoint = -56.0;
+	private static final double grabPoint = -43.0;
+	private static final double holdPoint = -53.0;
+	private static final double switchPoint = -53.0;
 	private static final double hswitchPoint = 1.0;
 	private static final double lScalePoint = 23.0;
 	private static final double mScalePoint = 35.0;
 	private static final double hScalePoint = 57.0;
 	private static final double behindPoint = 5;
 	private static final double vaultPoint = 5;
-	private static final double climbPoint = 5;
+	private static final double climbPoint = 70;
 
 	public static VictorSP shoulderM;
 	private static VictorSP wristM;
@@ -65,7 +65,7 @@ public class Arm {
 		wristM = new VictorSP(5);
 
 		shoulderA = new AnalogInput(0);
-		wristA = new AnalogInput(1);
+		wristA = new AnalogInput(3);
 
 		shoulderPID = new PIDController(0.06, 0.0, 0.0);
 		shoulderPID.setInputRange((SHOULDER_MIN-SHOULDER_B)/SHOULDER_M, (SHOULDER_MAX-SHOULDER_B)/SHOULDER_M);
@@ -81,7 +81,7 @@ public class Arm {
 		wristPID.setTolerance(0.2);
 		wristPID.enable();
 
-		limitSwitch = new DigitalInput(8);
+		limitSwitch = new DigitalInput(0);
 	}
 
 	public static void update() {
@@ -236,7 +236,7 @@ public class Arm {
 
 				case 21:
 					shoulderSet = climbPoint;
-					updateWrist(3);
+					updateWrist(7);
 
 					break;
 
@@ -245,7 +245,7 @@ public class Arm {
 					wristCheck = 4;
 			}
 
-			if (Robot.xbox2.RB()) {
+			if (Robot.xbox2.RB() && armCase != 1) {
 				wristCheck = 2;
 			}
 			updateWrist(wristCheck);
@@ -262,7 +262,7 @@ public class Arm {
 
 			if (!Robot.xbox2.A()) {
 				shoulderM.set(-Robot.xbox2.LStickY());
-				wristM.set(Robot.xbox2.RStickY());
+				wristM.set(-Robot.xbox2.RStickY());
 			}
 			if (Robot.xbox2.X()) {
 				Hand.set("Push");
@@ -274,44 +274,75 @@ public class Arm {
 		}
 	}
 
-	private static void updateWrist(int check) {
+	public static void updateWrist(int check) {
 		switch (check) {
 			case 0:
 				//Down
-				wristSet = 90 - shoulderAngle;
+				wristSet = 90 - shoulderAngle + 2;
 				break;
 			case 1:
 				//Backward
-				wristSet = 360 - shoulderAngle;
+				wristSet = 360 - shoulderAngle + 2;
 				break;
 			case 2:
 				//Hold
-				wristSet = 233;
+				wristSet = 235 + 2;
 				break;
 			case 3:
 				//Place
-				wristSet = 180 - shoulderAngle;
+				wristSet = 180 - shoulderAngle + 2;
 				break;
 
 			case 4:
 				//Move up slightly while grabbing
-				wristSet = 170;
+				wristSet = 170 + 2;
 
 			case 5:
 				//Switch Place
-				wristSet = 180;
+				wristSet = 180 + 2;
 				break;
 
 			case 6:
 				//Push Place
-				wristSet = 170 - shoulderAngle;
+				wristSet = 170 - shoulderAngle + 2;
+				break;
+
+			case 7:
+				//Climb
+				wristSet = 50 + 2;
+				break;
 		}
 
 		wristPID.setSetpoint(wristSet);
 		wristPID.setInput(wristAngle);
 
-		wristM.set(wristPID.performPID());
+		wristM.set(-wristPID.performPID());
 
+	}
+
+	public static void endGame(int state) {
+		shoulderAngle = (shoulderAngle-SHOULDER_B)/SHOULDER_M;
+		wristAngle = (wristAngle-WRIST_B)/WRIST_M;
+
+		switch (state) {
+			case 0:
+				shoulderSet = climbPoint;
+				updateWrist(7);
+				break;
+
+			case 1:
+				shoulderSet = holdPoint;
+				updateWrist(2);
+				break;
+		}
+
+		shoulderPID.setInput(shoulderAngle);
+		shoulderPID.setSetpoint(shoulderSet);
+		if (shoulderPID.performPID() < 0.0) {
+			shoulderM.set(shoulderPID.performPID()*0.5);
+		} else {
+			shoulderM.set(shoulderPID.performPID());
+		}
 	}
 
 	public static void setOffsets(double sm, double sb, double sMin, double sMax, double wm, double wb, double wMin, double wMax, int lsP) {

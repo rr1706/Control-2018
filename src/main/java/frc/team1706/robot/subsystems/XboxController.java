@@ -4,7 +4,7 @@ import edu.wpi.first.wpilibj.Joystick;
 
 public class XboxController extends Joystick {
 	private Joystick stick;
-	private final double deadband = 0.075;
+	private double deadband;
 
 	public XboxController(int port) {
 		super(port);
@@ -93,6 +93,10 @@ public class XboxController extends Joystick {
 
 	public int DPad() {
 		return stick.getPOV();
+	}
+
+	public void setDeadband(double band) {
+		this.deadband = band;
 	}
 
 	public void rumble() {

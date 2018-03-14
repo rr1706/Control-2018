@@ -52,7 +52,7 @@ public class Hand {
 		}
 
 		left.set(-motorCommand);
-		right.set(motorCommand);
+		right.set(-motorCommand);
 
 	}
 }

@@ -37,10 +37,11 @@ public class Robot extends TimedRobot {
 
 	private XboxController xbox1 = new XboxController(0);
 	public static XboxController xbox2 = new XboxController(1);
-	private static XboxController endbox = new XboxController(2);
+//	private static XboxController endbox = new XboxController(2);
 
 	private int autonomousChoice;
 	private int autoOrderChoice;
+	private int autoSameSide;
 	private int autoForward;
 //	private JetsonServer jet;
 	private Thread t;
@@ -101,6 +102,9 @@ public class Robot extends TimedRobot {
 	private boolean slow = false;
 	private boolean previousSlowButton = false;
 	private boolean currentSlowButton = false;
+
+	private boolean releasePlatform = false;
+	private boolean prevEndGame = false;
 
 	private double command = 0;
 
@@ -257,10 +261,12 @@ public class Robot extends TimedRobot {
 		autoChooser.addDefault("Middle", 1);
 		autoChooser.addObject("Left", 2);
 		autoChooser.addObject("Right", 3);
+		autoChooser.addObject("Forward", 4);
 		SmartDashboard.putData("Autonomous Mode Chooser", autoChooser);
 
-		SmartDashboard.putNumber("AutoOrder", 0);
-		SmartDashboard.putNumber("AutoForwardOnly", 0);
+//		SmartDashboard.putNumber("AutoOrder", 0);
+//		SmartDashboard.putNumber("AutoForwardOnly", 0);
+//		SmartDashboard.putNumber("AutoSameSideOnly", 0);
 
 		log = new RRLogger();
 
@@ -294,6 +300,8 @@ public class Robot extends TimedRobot {
 			c++;
 		}
 
+		SmartDashboard.putString("Game Data", gameData);
+
 		char switchSide = gameData.charAt(0);
 		char scaleSide = gameData.charAt(1);
 
@@ -303,6 +311,7 @@ public class Robot extends TimedRobot {
 		autonomousChoice = autoChooser.getSelected();
 		autoOrderChoice = (int) SmartDashboard.getNumber("AutoOrder", 0);
 		autoForward = (int) SmartDashboard.getNumber("AutoForwardOnly", 0);
+		autoSameSide = (int) SmartDashboard.getNumber("AutoSameSideOnly", 0);
 
 		String choice;
 
@@ -330,27 +339,51 @@ public class Robot extends TimedRobot {
 						choice = "/home/lvuser/LeftSwitchLScaleL.csv";
 					}
 				} else {
-					choice = "/home/lvuser/LeftSwitchLScaleR.csv";
+					if (autoSameSide == 1) {
+						choice = "/home/lvuser/LeftSwitchL.csv";
+					} else {
+						choice = "/home/lvuser/LeftSwitchLScaleR.csv";
+					}
 				}
 			} else {
 				if (scaleSide == 'L') {
-					choice = "/home/lvuser/LeftSwitchRScaleL.csv";
+					if (autoSameSide == 1) {
+						choice = "/home/lvuser/LeftScaleL.csv";
+					} else {
+						choice = "/home/lvuser/LeftSwitchRScaleL.csv";
+					}
 				} else {
-					choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+					if (autoOrderChoice == 1) {
+						choice = "/home/lvuser/LeftMoveOnly.csv";
+					} else {
+						choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+					}
 				}
 			}
 
 		} else if (autonomousChoice == 3) {
 			if (switchSide == 'L') {
 				if (scaleSide == 'L') {
-					choice = "/home/lvuser/RightSwitchLScaleL.csv";
+					if (autoSameSide == 1) {
+						choice = "/home/lvuser/RightMoveOnly.csv";
+					} else {
+						choice = "/home/lvuser/RightSwitchLScaleL.csv";
+					}
 
 				} else {
-					choice = "/home/lvuser/RightSwitchLScaleR.csv";
+					if (autoSameSide == 1) {
+						choice = "/home/lvuser/RightScaleR.csv";
+					} else {
+						choice = "/home/lvuser/RightSwitchLScaleR.csv";
+					}
 				}
 			} else {
 				if (scaleSide == 'L') {
-					choice = "/home/lvuser/RightSwitchRScaleL.csv";
+					if (autoSameSide == 1) {
+						choice = "/home/lvuser/RightSwitchR.csv";
+					} else {
+						choice = "/home/lvuser/RightSwitchRScaleL.csv";
+					}
 				} else {
 					if (autoOrderChoice == 1) {
 						choice = "/home/lvuser/RightScaleFirst.csv";
@@ -605,6 +638,10 @@ public class Robot extends TimedRobot {
 
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
 
+		xbox1.setDeadband(0.075);
+		xbox2.setDeadband(0.12);
+//		endbox.setDeadband(0.1);
+
 		// calibration from smartdashboard
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).setOffset(SmartDashboard.getNumber("FR offset: ", 0));
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).setOffset(SmartDashboard.getNumber("FL offset: ", 0));
@@ -745,33 +782,53 @@ public class Robot extends TimedRobot {
 
 		keepAngle();
 
-		switch (armController) {
-			case 0:
+//		switch (armController) {
+//			case 0:
 				Arm.update();
-				if (endbox.A()) {
-					armController = 1;
-				}
-				break;
+//				if (endbox.A()) {
+//					armController = 1;
+//				}
+//				break;
+//
+//			case 1:
+//				if (endbox.A()) {
+//					Arm.endGame(0);
+//				} else if (endbox.Y()) {
+//					Arm.endGame(1);
+//				} else {
+//					Arm.shoulderM.set(endbox.LStickY());
+//				}
 
-			case 1:
-				if (endbox.A()) {
-					Arm.armCase = 21;
-					Arm.update();
-				} else if (Math.abs(endbox.LStickY()) > 0.1) {
-					Arm.shoulderM.set(endbox.LStickY());
-				} else if (endbox.Y()) {
-					Arm.armCase = 0;
-					Arm.update();
+				if (xbox2.DPad() != -1 && !prevEndGame) {
+					releasePlatform = !releasePlatform;
+				}
+				prevEndGame = xbox2.DPad() != -1;
+
+				SmartDashboard.putBoolean("Guides Released", releasePlatform);
+
+				if (releasePlatform) {
+					Platform.release();
+				} else {
+					Platform.reset();
 				}
 
-				if (Math.abs(endbox.RStickY()) > 0.1) {
-					Winch.set(endbox.RStickY());
+				if (xbox2.Back()) {
+					Winch.set(-0.5);
+				} else {
+					Winch.set(xbox2.RTrig());
+
 				}
+
+				if (xbox2.LTrig() > 0.3) {
+					Arm.updateWrist(7);
+				}
+
+
 				if (xbox2.A() || xbox2.B()) {
 					armController = 0;
 				}
-				break;
-		}
+//				break;
+//		}
 
 		if (robotBackwards) {
 			driveTrain.drive(new Vector(-STR, -FWD), -RCW); // x = str, y = fwd, rotation = rcw
