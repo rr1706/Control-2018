@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
 
 	private Compressor compressor;
 
-	private XboxController xbox1 = new XboxController(0);
+	public static XboxController xbox1 = new XboxController(0);
 	public static XboxController xbox2 = new XboxController(1);
 //	private static XboxController endbox = new XboxController(2);
 
@@ -43,6 +43,7 @@ public class Robot extends TimedRobot {
 	private int autoOrderChoice;
 	private int autoSameSide;
 	private int autoForward;
+	private int autoMultiScale;
 //	private JetsonServer jet;
 	private Thread t;
 	private SwerveDrivetrain driveTrain;
@@ -79,7 +80,7 @@ public class Robot extends TimedRobot {
 
 	private int dx = -1;
 
-	private double FWD;
+	public static double FWD;
 	private double STR;
 	private double RCW;
 
@@ -121,6 +122,9 @@ public class Robot extends TimedRobot {
 	private File offsets = new File("/home/lvuser/SWERVE_OFFSET.txt");
 
 	private int armController = 0;
+
+	private boolean rumble = false;
+	private int rumbleTime = 0;
 
 	private void keepAngle() {
 		// LABEL keepAngle
@@ -266,6 +270,7 @@ public class Robot extends TimedRobot {
 //		SmartDashboard.putNumber("AutoOrder", 0);
 //		SmartDashboard.putNumber("AutoForwardOnly", 0);
 //		SmartDashboard.putNumber("AutoSameSideOnly", 0);
+//		SmartDashboard.putNumber("MultiScale", 0);
 
 		log = new RRLogger();
 
@@ -311,6 +316,7 @@ public class Robot extends TimedRobot {
 		autoOrderChoice = (int) SmartDashboard.getNumber("AutoOrder", 0);
 		autoForward = (int) SmartDashboard.getNumber("AutoForwardOnly", 0);
 		autoSameSide = (int) SmartDashboard.getNumber("AutoSameSideOnly", 0);
+		autoMultiScale = (int) SmartDashboard.getNumber("MultiScale", 0);
 
 		String choice;
 
@@ -330,73 +336,108 @@ public class Robot extends TimedRobot {
 			}
 
 		} else if (autonomousChoice == 2) {
-			if (switchSide == 'L') {
-				if (scaleSide == 'L') {
-					if (autoOrderChoice == 1) {
-						choice = "/home/lvuser/LeftScaleFirst.csv";
-					} else {
-						choice = "/home/lvuser/LeftSwitchLScaleL.csv";
-					}
-				} else {
-					if (autoSameSide == 1) {
-						choice = "/home/lvuser/LeftSwitchL.csv";
-					} else {
-						choice = "/home/lvuser/LeftSwitchLScaleR.csv";
-					}
-				}
+			if (autoForward == 1) {
+				choice = "/home/lvuser/LeftMoveOnly.csv";
 			} else {
-				if (scaleSide == 'L') {
-					if (autoSameSide == 1) {
-						choice = "/home/lvuser/LeftScaleL.csv";
+				if (switchSide == 'L') {
+					if (scaleSide == 'L') {
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/LeftMultiScaleL.csv";
+						} else {
+							if (autoOrderChoice == 1) {
+								choice = "/home/lvuser/LeftScaleFirst.csv";
+							} else {
+								choice = "/home/lvuser/LeftSwitchLScaleL.csv";
+							}
+						}
 					} else {
-						choice = "/home/lvuser/LeftSwitchRScaleL.csv";
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/LeftMultiScaleR.csv";
+						} else {
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/LeftSwitchL.csv";
+							} else {
+								choice = "/home/lvuser/LeftSwitchLScaleR.csv";
+							}
+						}
 					}
 				} else {
-					if (autoOrderChoice == 1) {
-						choice = "/home/lvuser/LeftMoveOnly.csv";
+					if (scaleSide == 'L') {
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/LeftMultiScaleL.csv";
+						} else {
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/LeftMultiScaleL.csv";
+							} else {
+								choice = "/home/lvuser/LeftSwitchRScaleL.csv";
+							}
+						}
 					} else {
-						choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/LeftMultiScaleR.csv";
+						} else {
+							if (autoOrderChoice == 1) {
+								choice = "/home/lvuser/LeftMoveOnly.csv";
+							} else {
+								choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+							}
+						}
 					}
 				}
 			}
 
 		} else if (autonomousChoice == 3) {
-			if (switchSide == 'L') {
-				if (scaleSide == 'L') {
-					if (autoSameSide == 1) {
-						choice = "/home/lvuser/RightMoveOnly.csv";
-					} else {
-						choice = "/home/lvuser/RightSwitchLScaleL.csv";
-					}
-
-				} else {
-					if (autoSameSide == 1) {
-						choice = "/home/lvuser/RightScaleR.csv";
-					} else {
-						choice = "/home/lvuser/RightSwitchLScaleR.csv";
-					}
-				}
+			if (autoForward == 1) {
+				choice = "/home/lvuser/RightMoveOnly.csv";
 			} else {
-				if (scaleSide == 'L') {
-					if (autoSameSide == 1) {
-						choice = "/home/lvuser/RightSwitchR.csv";
+				if (switchSide == 'L') {
+					if (scaleSide == 'L') {
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/RightMultiScaleL.csv";
+						} else {
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/RightMoveOnly.csv";
+							} else {
+								choice = "/home/lvuser/RightSwitchLScaleL.csv";
+							}
+						}
 					} else {
-						choice = "/home/lvuser/RightSwitchRScaleL.csv";
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/RightMultiScaleR.csv";
+						} else {
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/RightMultiScaleR.csv";
+							} else {
+								choice = "/home/lvuser/RightSwitchLScaleR.csv";
+							}
+						}
 					}
 				} else {
-					if (autoOrderChoice == 1) {
-						choice = "/home/lvuser/RightScaleFirst.csv";
+					if (scaleSide == 'L') {
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/RightMultiScaleL.csv";
+						} else {
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/RightSwitchR.csv";
+							} else {
+								choice = "/home/lvuser/RightSwitchRScaleL.csv";
+							}
+						}
 					} else {
-						choice = "/home/lvuser/RightSwitchRScaleR.csv";
+						if (autoMultiScale == 1) {
+							choice = "/home/lvuser/RightMultiScaleR.csv";
+						} else {
+							if (autoOrderChoice == 1) {
+								choice = "/home/lvuser/RightScaleFirst.csv";
+							} else {
+								choice = "/home/lvuser/RightSwitchRScaleR.csv";
+							}
+						}
 					}
 				}
 			}
 
 		} else {
-			choice = "/home/lvuser/Forward.csv";
-		}
-
-		if (autoForward == 1) {
 			choice = "/home/lvuser/Forward.csv";
 		}
 
@@ -459,6 +500,7 @@ public class Robot extends TimedRobot {
 
 				break;
 
+
 			case 1:
 
 				SmartDashboard.putNumber("Array Index", arrayIndex);
@@ -467,7 +509,8 @@ public class Robot extends TimedRobot {
 				/*
 				 * 0 = translate speed, 1 = rotate speed, 2 = direction to translate, 3 = direction to face,
 				 * 4 = distance(in), 6 = moonSTR, 7 = moonRCW, 8 = moonAngle, 10 = time out(seconds), 11 = check for collision,
-				 * 12 = imu offset, 13 = arm position, 14 hand position
+				 * 12 = imu offset, 13 = arm position, 14 = hand position, 15  = check for havecube, 16 = check for nearcube
+				 * 17 = check for wall, 18 = check for onCube
 				 */
 				//Note: use moonRCW to rotate robot
 
@@ -485,13 +528,6 @@ public class Robot extends TimedRobot {
 					Hand.set("OpenPull");
 				} else if ((int) commands[arrayIndex][14] == 5) {
 					Hand.set("Turbo");
-				}
-
-				if (commands[arrayIndex][15] == 1 && (Arm.haveCube)) {
-					collisionDone = true;
-					driveDone = true;
-					turnDone = true;
-					timeDone = true;
 				}
 
 				Arm.update();
@@ -551,6 +587,7 @@ public class Robot extends TimedRobot {
 					collisionDone = true;
 					driveDone = true;
 					turnDone = true;
+					moonDone = true;
 				} else if (commands[arrayIndex][10] == 0) {
 					timeDone = true;
 				}
@@ -592,10 +629,41 @@ public class Robot extends TimedRobot {
 					driveTrain.drive(new Vector(STR, FWD), RCW);
 				}
 
+				if (commands[arrayIndex][15] == 1 && Arm.haveCube) {
+					collisionDone = true;
+					driveDone = true;
+					turnDone = true;
+					moonDone = true;
+				}
+
+				if (commands[arrayIndex][16] == 1 && Arm.nearCube) {
+					collisionDone = true;
+					driveDone = true;
+					turnDone = true;
+					moonDone = true;
+				}
+
+				if (commands[arrayIndex][17] == 1 && Arm.onWall) {
+					collisionDone = true;
+					driveDone = true;
+					turnDone = true;
+					moonDone = true;
+				}
+
+				if (commands[arrayIndex][18] == 1 && Arm.onCube) {
+					collisionDone = true;
+					driveDone = true;
+					turnDone = true;
+					moonDone = true;
+				}
+
+//				System.out.println("Index: " + arrayIndex);
+//				System.out.println("HaveCube: " + Arm.haveCube);
 //				System.out.println("Drive: " + driveDone);
 //				System.out.println("Turn: " + turnDone);
 //				System.out.println("Coll: " + collisionDone);
 //				System.out.println("Time: " + timeDone);
+//				System.out.println("TimeNum: " + Time.get() + " | " + (timeBase + commands[arrayIndex][10]));
 
 				if (driveDone && turnDone && collisionDone && moonDone) {
 					arrayIndex++;
@@ -635,11 +703,22 @@ public class Robot extends TimedRobot {
 		// LABEL teleop periodic
 		autonomous = false;
 
-		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
-		SmartDashboard.putNumber("Shoulder Amps", PowerPanel.three());
+		if (!xbox1.RB()) {
+			Ziptie.deploy();
+		} else {
+			Ziptie.stop();
+		}
 
-		xbox1.setDeadband(0.075);
-		xbox2.setDeadband(0.12);
+		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
+		SmartDashboard.putNumber("Wrist Amps", PowerPanel.two());
+		SmartDashboard.putNumber("Elbow Amps", PowerPanel.three());
+
+		SmartDashboard.putNumber("Winch1 Amps", PowerPanel.zero());
+		SmartDashboard.putNumber("Winch2 Amps", PowerPanel.one());
+
+
+		xbox1.setDeadband(0.09);
+		xbox2.setDeadband(0.09);
 
 		// calibration from smartdashboard
 		SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).setOffset(SmartDashboard.getNumber("FR offset: ", 0));
@@ -647,13 +726,10 @@ public class Robot extends TimedRobot {
 		SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).setOffset(SmartDashboard.getNumber("BL offset: ", 0));
 		SwerveDrivetrain.swerveModules.get(WheelType.BACK_RIGHT).setOffset(SmartDashboard.getNumber("BR offset: ", 0));
 
-//		log.newLine();
-//		log.newPowerLine();
-//
-//		log.addPower("BR", PowerPanel.j());
-//		log.addPower("BL", PowerPanel.k());
-//		log.addPower("FL", PowerPanel.f());
-//		log.addPower("FR", PowerPanel.h());
+		log.newPowerLine();
+
+		log.addPower("Wrist", PowerPanel.two());
+//		log.addPower("Wrist", PowerPanel.two());
 
 		SmartDashboard.putNumber("Distance", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance());
 
@@ -717,10 +793,31 @@ public class Robot extends TimedRobot {
 		}
 
 		if (imu.collisionDetected()) {
-			xbox1.rumble();
+			xbox1.rumbleRight(1.0);
+			xbox1.rumbleLeft(1.0);
 		} else {
 			xbox1.stopRumble();
 		}
+
+		if (Arm.haveCube && !Arm.prevHaveCube) {
+			rumble = true;
+			rumbleTime = 0;
+		}
+
+//		xbox1.rumbleRight(xbox2.LTrig());
+//		xbox1.rumbleLeft(1-xbox2.LTrig());
+
+		if (rumble) {
+			xbox2.rumbleRight(0.5);
+			xbox2.rumbleLeft(0.5);
+			rumbleTime++;
+			if (rumbleTime > 20) {
+				rumble = false;
+			}
+		} else {
+			xbox2.stopRumble();
+		}
+		Arm.prevHaveCube = Arm.haveCube;
 
 		SmartDashboard.putNumber("FWD", FWD);
 		SmartDashboard.putNumber("STR", STR);
@@ -781,53 +878,35 @@ public class Robot extends TimedRobot {
 
 		keepAngle();
 
-//		switch (armController) {
-//			case 0:
-				Arm.update();
-//				if (endbox.A()) {
-//					armController = 1;
-//				}
-//				break;
-//
-//			case 1:
-//				if (endbox.A()) {
-//					Arm.endGame(0);
-//				} else if (endbox.Y()) {
-//					Arm.endGame(1);
-//				} else {
-//					Arm.shoulderM.set(endbox.LStickY());
-//				}
+		Arm.update();
 
-				if (xbox2.DPad() != -1 && !prevEndGame) {
-					releasePlatform = !releasePlatform;
-				}
-				prevEndGame = xbox2.DPad() != -1;
+		if (xbox2.DPad() != -1 && !prevEndGame) {
+			releasePlatform = !releasePlatform;
+		}
+		prevEndGame = xbox2.DPad() != -1;
 
-				SmartDashboard.putBoolean("Guides Released", releasePlatform);
+		SmartDashboard.putBoolean("Guides Released", releasePlatform);
 
-				if (releasePlatform) {
-					Platform.release();
-				} else {
-					Platform.reset();
-				}
-
-				if (xbox2.Back()) {
-					Winch.set(-0.5);
-				} else {
-					Winch.set(xbox2.RTrig());
-
-				}
-
-				if (xbox2.LTrig() > 0.3) {
-					Arm.updateWrist(7);
-				}
+		if (releasePlatform) {
+			Platform.release();
+		} else {
+			Platform.reset();
+		}
 
 
-				if (xbox2.A() || xbox2.B()) {
-					armController = 0;
-				}
-//				break;
-//		}
+		if (xbox2.Back()) {
+			Winch.set(-0.5);
+		} else {
+			Winch.set(xbox2.RTrig());
+		}
+
+		if (xbox2.LTrig() > 0.3) {
+			Arm.updateWrist(7);
+		}
+
+		if (xbox2.A() || xbox2.B()) {
+			armController = 0;
+		}
 
 		if (robotBackwards) {
 			driveTrain.drive(new Vector(-STR, -FWD), -RCW); // x = str, y = fwd, rotation = rcw

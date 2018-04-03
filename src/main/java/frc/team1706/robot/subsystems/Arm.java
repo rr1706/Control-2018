@@ -23,13 +23,16 @@ public class Arm {
 
 	private static int lsPort;
 
-	private static final double grabPoint = -43.0;
+	private static int grabTime = 0;
+	private static int grabCase = 0;
+
+	private static final double grabPoint = -53.0;
 	private static final double holdPoint = -53.0;
 	private static final double switchPoint = -53.0;
-	private static final double hswitchPoint = 1.0;
-	private static final double lScalePoint = 23.0;
-	private static final double mScalePoint = 35.0;
-	private static final double hScalePoint = 57.0;
+	private static final double hswitchPoint = -10.0;
+	private static final double lScalePoint = 8.0;
+	private static final double mScalePoint = 21.0;
+	private static final double hScalePoint = 47.0;
 	private static final double behindPoint = 5;
 	private static final double vaultPoint = 5;
 	private static final double climbPoint = 70;
@@ -53,15 +56,26 @@ public class Arm {
 	public static int armCase = 0;
 	public static boolean auto = false;
 
-	private static DigitalInput limitSwitch;
+	private static DigitalInput nearCubeSensor;
+	private static DigitalInput farCubeSensor;
+	private static DigitalInput distanceSensor;
+	private static DigitalInput wallSensor;
+
 	public static boolean haveCube = false;
+	public static boolean prevHaveCube = false;
+	public static boolean onCube = false;
+	public static boolean nearCube = false;
+	public static boolean onWall = false;
 
 	private static boolean manual = false;
 	private static int manualToggle = 0;
 	private static boolean manualToggled = false;
 
 	public static void init() {
+
 		shoulderM = new VictorSP(4);
+
+
 		wristM = new VictorSP(5);
 
 		shoulderA = new AnalogInput(0);
@@ -81,11 +95,22 @@ public class Arm {
 		wristPID.setTolerance(0.2);
 		wristPID.enable();
 
-		limitSwitch = new DigitalInput(0);
+		nearCubeSensor = new DigitalInput(0);
+		farCubeSensor = new DigitalInput(8);
+		distanceSensor = new DigitalInput(9);
+		wallSensor = new DigitalInput(7);
 	}
 
 	public static void update() {
-		haveCube = !limitSwitch.get();
+		SmartDashboard.putBoolean("Cube Distance Sensor", distanceSensor.get());
+		SmartDashboard.putBoolean("Have Cube", !nearCubeSensor.get());
+		SmartDashboard.putBoolean("On Cube", farCubeSensor.get());
+		SmartDashboard.putBoolean("On Wall", wallSensor.get());
+
+		haveCube = !nearCubeSensor.get();
+		onCube = farCubeSensor.get();
+		nearCube = distanceSensor.get();
+		onWall = wallSensor.get();
 		shoulderAngle = shoulderA.getValue();
 		wristAngle = wristA.getValue();
 
@@ -117,9 +142,10 @@ public class Arm {
 				}
 				break;
 		}
+//		System.out.println("nearCube: " + nearCube + " | haveCube: " + haveCube);
 
-		if (!manual) {
-			if (((armCase == 0 && !Robot.xbox2.B()) || armCase == 3 || armCase == 6 || armCase == 9 || armCase == 12 || armCase == 15 || armCase == 18 || armCase == 24) && !auto) {
+		if (!manual || auto) {
+			if (((armCase == 0 && !Robot.xbox2.B()) || armCase == 3 || armCase == 6 || armCase == 9 || armCase == 12 || armCase == 15 || armCase == 18 || armCase == 24) && !auto ) {
 				if (Robot.xbox2.A() && Robot.xbox2.LStickX() > 0.5) {
 					armCase = 24;
 				} else if (Robot.xbox2.A() && Robot.xbox2.LStickY() > 0.5) {
@@ -160,7 +186,7 @@ public class Arm {
 					}
 					wristCheck = 2;
 
-					if (Robot.xbox2.B() && !haveCube) {
+					if (((Robot.xbox2.B() || (Robot.xbox2.Start() && nearCube))) && !haveCube) {
 						armCase = 1;
 					}
 					break;
@@ -174,12 +200,48 @@ public class Arm {
 						wristCheck = 0;
 					}
 
-					if (Robot.xbox2.A() && !haveCube) {
-						Hand.set("Pull");
-					} else if (!Robot.xbox2.B() || haveCube) {
+					if (!auto) {
+						switch (grabCase) {
+							case 0:
+								Hand.set("Open");
+								if (nearCube && Robot.xbox2.Start() && !haveCube) {
+									grabCase = 1;
+								} else if (Robot.xbox2.A() && !haveCube) {
+									grabCase = 2;
+								}
+								break;
+
+							case 1:
+								Hand.set("OpenPull");
+								if (onCube && grabTime > 10) {
+									grabCase = 2;
+									grabTime = 0;
+								}
+								grabTime++;
+								break;
+
+							case 2:
+								Hand.set("Pull");
+								if (!Robot.xbox2.A() && !Robot.xbox2.Start()) {
+									grabCase = 0;
+								}
+
+								if (haveCube) {
+									Robot.FWD = -0.5;
+									if (grabTime > 10) {
+										armCase = 0;
+										grabCase = 0;
+									}
+									grabTime++;
+								} else {
+									grabTime = 0;
+								}
+								break;
+						}
+					}
+
+					if ((!Robot.xbox2.B() && !Robot.xbox2.Start())) {
 						armCase = 0;
-					} else {
-						Hand.set("Open");
 					}
 
 					break;
@@ -224,8 +286,8 @@ public class Arm {
 					break;
 
 				case 15:
-					shoulderSet = behindPoint;
-					wristCheck = 2;
+					shoulderSet = hScalePoint;
+					wristCheck = 3;
 
 					break;
 
@@ -242,13 +304,17 @@ public class Arm {
 
 				case 24:
 					shoulderSet = hswitchPoint;
-					wristCheck = 4;
+					wristCheck = 3;
 			}
 
 			if (Robot.xbox2.RB() && armCase != 1) {
 				wristCheck = 2;
 			}
 			updateWrist(wristCheck);
+
+			if (armCase != 0) {
+				shoulderSet += Robot.xbox1.RTrig()*15 - Robot.xbox1.LTrig()*15;
+			}
 
 			shoulderPID.setInput(shoulderAngle);
 			shoulderPID.setSetpoint(shoulderSet);
@@ -264,10 +330,15 @@ public class Arm {
 				shoulderM.set(-Robot.xbox2.LStickY());
 				wristM.set(-Robot.xbox2.RStickY());
 			}
+
 			if (Robot.xbox2.X()) {
 				Hand.set("Push");
 			} else if (Robot.xbox2.Y()) {
 				Hand.set("Turbo");
+			} else if (Robot.xbox2.A()) {
+				Hand.set("Pull");
+			} else if (Robot.xbox2.B()) {
+				Hand.set("Open");
 			} else {
 				Hand.set("Hold");
 			}
@@ -278,38 +349,39 @@ public class Arm {
 		switch (check) {
 			case 0:
 				//Down
-				wristSet = 90 - shoulderAngle + 2;
+				wristSet = 90 - shoulderAngle;
 				break;
 			case 1:
 				//Backward
-				wristSet = 360 - shoulderAngle + 2;
+				wristSet = 360 - shoulderAngle;
 				break;
 			case 2:
 				//Hold
-				wristSet = 235 + 2;
+				wristSet = 260;
 				break;
 			case 3:
 				//Place
-				wristSet = 180 - shoulderAngle + 2;
+				wristSet = 190 - shoulderAngle;
 				break;
 
 			case 4:
 				//Move up slightly while grabbing
-				wristSet = 170 + 2;
+				wristSet = 180;
+				break;
 
 			case 5:
 				//Switch Place
-				wristSet = 180 + 2;
+				wristSet = 190 - shoulderAngle;
 				break;
 
 			case 6:
 				//Push Place
-				wristSet = 170 - shoulderAngle + 2;
+				wristSet = 180 - shoulderAngle;
 				break;
 
 			case 7:
 				//Climb
-				wristSet = 50 + 2;
+				wristSet = 50;
 				break;
 		}
 

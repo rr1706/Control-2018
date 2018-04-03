@@ -99,9 +99,12 @@ public class XboxController extends Joystick {
 		this.deadband = band;
 	}
 
-	public void rumble() {
-		stick.setRumble(RumbleType.kRightRumble, 1);
-		stick.setRumble(RumbleType.kLeftRumble, 1);
+	public void rumbleRight(double val) {
+		stick.setRumble(RumbleType.kRightRumble, val);
+	}
+
+	public void rumbleLeft(double val) {
+		stick.setRumble(RumbleType.kLeftRumble, val);
 	}
 
 	public void stopRumble() {
