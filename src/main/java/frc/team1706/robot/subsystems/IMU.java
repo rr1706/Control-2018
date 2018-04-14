@@ -70,9 +70,9 @@ public class IMU {
 		return ahrs.getVelocityY();
 	}
 
-	public void reset() {
+	public void reset(int offset) {
 		ahrs.reset();
-		setOffset(0);
+		setOffset(offset);
 	}
 
 	public void setOffset(double offset) {

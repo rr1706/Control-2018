@@ -42,6 +42,7 @@ public class Robot extends TimedRobot {
 	private int autonomousChoice;
 	private int autoOrderChoice;
 	private int autoSameSide;
+	private int autoSwitchOnly;
 	private int autoForward;
 	private int autoMultiScale;
 //	private JetsonServer jet;
@@ -271,6 +272,8 @@ public class Robot extends TimedRobot {
 //		SmartDashboard.putNumber("AutoForwardOnly", 0);
 //		SmartDashboard.putNumber("AutoSameSideOnly", 0);
 //		SmartDashboard.putNumber("MultiScale", 0);
+// 		SmartDashboard.putNumber("Switch Only (mid)", 0);
+
 
 		log = new RRLogger();
 
@@ -310,28 +313,37 @@ public class Robot extends TimedRobot {
 		char scaleSide = gameData.charAt(1);
 
 		timeCheck = true;
-		imu.reset();
+		imu.reset(0);
 
 		autonomousChoice = autoChooser.getSelected();
 		autoOrderChoice = (int) SmartDashboard.getNumber("AutoOrder", 0);
 		autoForward = (int) SmartDashboard.getNumber("AutoForwardOnly", 0);
 		autoSameSide = (int) SmartDashboard.getNumber("AutoSameSideOnly", 0);
 		autoMultiScale = (int) SmartDashboard.getNumber("MultiScale", 0);
+		autoSwitchOnly = (int) SmartDashboard.getNumber("Switch Only (mid)", 0);
 
 		String choice;
 
 		if (autonomousChoice == 1) {
 			if (switchSide == 'L') {
-				if (scaleSide == 'L') {
-					choice = "/home/lvuser/MidSwitchLScaleL.csv";
+				if (autoSwitchOnly == 1) {
+					choice = "/home/lvuser/MidSwitchL.csv";
 				} else {
-					choice = "/home/lvuser/MidSwitchLScaleR.csv";
+					if (scaleSide == 'L') {
+						choice = "/home/lvuser/MidSwitchLScaleL.csv";
+					} else {
+						choice = "/home/lvuser/MidSwitchLScaleR.csv";
+					}
 				}
 			} else {
-				if (scaleSide == 'L') {
-					choice = "/home/lvuser/MidSwitchRScaleL.csv";
+				if (autoSwitchOnly == 1) {
+					choice = "/home/lvuser/MidSwitchR.csv";
 				} else {
-					choice = "/home/lvuser/MidSwitchRScaleR.csv";
+					if (scaleSide == 'L') {
+						choice = "/home/lvuser/MidSwitchRScaleL.csv";
+					} else {
+						choice = "/home/lvuser/MidSwitchRScaleR.csv";
+					}
 				}
 			}
 
@@ -478,6 +490,8 @@ public class Robot extends TimedRobot {
 		// LABEL autonomous periodic
 
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
+
+		Ziptie.deploy();
 
 		if (timeCheck) {
 			timeBase = Time.get();
@@ -710,8 +724,8 @@ public class Robot extends TimedRobot {
 		}
 
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
-		SmartDashboard.putNumber("Wrist Amps", PowerPanel.two());
-		SmartDashboard.putNumber("Elbow Amps", PowerPanel.three());
+		SmartDashboard.putNumber("Wrist Amps", PowerPanel.zero());
+		SmartDashboard.putNumber("Elbow Amps", PowerPanel.one());
 
 		SmartDashboard.putNumber("Winch1 Amps", PowerPanel.zero());
 		SmartDashboard.putNumber("Winch2 Amps", PowerPanel.one());
@@ -734,7 +748,13 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("Distance", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance());
 
 		if (xbox1.Back()) {
-			imu.reset(); // robot should be perpendicular to field when pressed.
+			imu.reset(0); // robot should be perpendicular to field when pressed.
+		} else if (xbox1.Y()) {
+			imu.reset(180);
+		} else if (xbox1.X()) {
+			imu.reset(270);
+		} else if (xbox1.B()) {
+			imu.reset(90);
 		}
 
 		// forward command (-1.0 to 1.0)
@@ -827,12 +847,12 @@ public class Robot extends TimedRobot {
 		double headingDeg = imu.getAngle();
 		double headingRad = MathUtils.degToRad(headingDeg);
 
-		currentSlowButton = xbox1.X();
-		if (currentSlowButton && !previousSlowButton) {
-			slow = !slow;
-
-		}
-		previousSlowButton = currentSlowButton;
+//		currentSlowButton = xbox1.X();
+//		if (currentSlowButton && !previousSlowButton) {
+//			slow = !slow;
+//
+//		}
+//		previousSlowButton = currentSlowButton;
 
 		currentOrientedButton = xbox1.A();
 		if (currentOrientedButton && !previousOrientedButton) {

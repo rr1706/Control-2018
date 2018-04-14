@@ -307,9 +307,6 @@ public class Arm {
 					wristCheck = 3;
 			}
 
-			if (Robot.xbox2.RB() && armCase != 1) {
-				wristCheck = 2;
-			}
 			updateWrist(wristCheck);
 
 			if (armCase != 0) {
