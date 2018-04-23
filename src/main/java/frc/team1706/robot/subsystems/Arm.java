@@ -26,9 +26,9 @@ public class Arm {
 	private static int grabTime = 0;
 	private static int grabCase = 0;
 
-	private static final double grabPoint = -53.0;
-	private static final double holdPoint = -53.0;
-	private static final double switchPoint = -53.0;
+	private static final double grabPoint = -56.0;
+	private static final double holdPoint = -56.0;
+	private static final double switchPoint = -56.0;
 	private static final double hswitchPoint = -10.0;
 	private static final double lScalePoint = 8.0;
 	private static final double mScalePoint = 21.0;
@@ -218,6 +218,7 @@ public class Arm {
 									grabTime = 0;
 								}
 								grabTime++;
+
 								break;
 
 							case 2:
@@ -253,35 +254,32 @@ public class Arm {
 					break;
 
 				case 6:
-					if (Robot.xbox2.LB()) {
-						shoulderSet = lScalePoint-5;
-						wristCheck = 6;
-					} else {
+					if (auto) {
 						shoulderSet = lScalePoint;
-						wristCheck = 3;
+					} else {
+						shoulderSet = scaleEq(-Robot.xbox2.LStickY());
 					}
+					wristCheck = 3;
 
 					break;
 
 				case 9:
-					if (Robot.xbox2.LB()) {
-						shoulderSet = mScalePoint+7;
-						wristCheck = 6;
-					} else {
+					if (auto) {
 						shoulderSet = mScalePoint;
-						wristCheck = 3;
+					} else {
+						shoulderSet = scaleEq(-Robot.xbox2.LStickY());
 					}
+					wristCheck = 3;
 
 					break;
 
 				case 12:
-					if (Robot.xbox2.LB()) {
-						shoulderSet = hScalePoint-5;
-						wristCheck = 6;
-					} else {
+					if (auto) {
 						shoulderSet = hScalePoint;
-						wristCheck = 3;
+					} else {
+						shoulderSet = scaleEq(-Robot.xbox2.LStickY());
 					}
+					wristCheck = 3;
 
 					break;
 
@@ -310,7 +308,7 @@ public class Arm {
 			updateWrist(wristCheck);
 
 			if (armCase != 0) {
-				shoulderSet += Robot.xbox1.RTrig()*15 - Robot.xbox1.LTrig()*15;
+				shoulderSet += Robot.xbox1.RTrig()*35 - Robot.xbox1.LTrig()*15;
 			}
 
 			shoulderPID.setInput(shoulderAngle);
@@ -325,7 +323,11 @@ public class Arm {
 
 			if (!Robot.xbox2.A()) {
 				shoulderM.set(-Robot.xbox2.LStickY());
-				wristM.set(-Robot.xbox2.RStickY());
+				if (Robot.xbox2.LB()) {
+					updateWrist(2);
+				} else {
+					wristM.set(-Robot.xbox2.RStickY());
+				}
 			}
 
 			if (Robot.xbox2.X()) {
@@ -354,7 +356,7 @@ public class Arm {
 				break;
 			case 2:
 				//Hold
-				wristSet = 260;
+				wristSet = 256;
 				break;
 			case 3:
 				//Place
@@ -412,6 +414,10 @@ public class Arm {
 		} else {
 			shoulderM.set(shoulderPID.performPID());
 		}
+	}
+
+	private static double scaleEq(double val) {
+		return 5*Math.pow(val, 2) + 21*val + 23;
 	}
 
 	public static void setOffsets(double sm, double sb, double sMin, double sMax, double wm, double wb, double wMin, double wMax, int lsP) {

@@ -45,6 +45,7 @@ public class Robot extends TimedRobot {
 	private int autoSwitchOnly;
 	private int autoForward;
 	private int autoMultiScale;
+	private int autoSingleScale;
 //	private JetsonServer jet;
 	private Thread t;
 	private SwerveDrivetrain driveTrain;
@@ -273,6 +274,8 @@ public class Robot extends TimedRobot {
 //		SmartDashboard.putNumber("AutoSameSideOnly", 0);
 //		SmartDashboard.putNumber("MultiScale", 0);
 // 		SmartDashboard.putNumber("Switch Only (mid)", 0);
+// 		SmartDashboard.putNumber("SingleScale", 0);
+
 
 
 		log = new RRLogger();
@@ -321,6 +324,7 @@ public class Robot extends TimedRobot {
 		autoSameSide = (int) SmartDashboard.getNumber("AutoSameSideOnly", 0);
 		autoMultiScale = (int) SmartDashboard.getNumber("MultiScale", 0);
 		autoSwitchOnly = (int) SmartDashboard.getNumber("Switch Only (mid)", 0);
+		autoSingleScale = (int) SmartDashboard.getNumber("SingleScale", 0);
 
 		String choice;
 
@@ -355,6 +359,8 @@ public class Robot extends TimedRobot {
 					if (scaleSide == 'L') {
 						if (autoMultiScale == 1) {
 							choice = "/home/lvuser/LeftMultiScaleL.csv";
+						} else if (autoSingleScale == 1) {
+							choice = "/home/lvuser/LeftScaleL.csv";
 						} else {
 							if (autoOrderChoice == 1) {
 								choice = "/home/lvuser/LeftScaleFirst.csv";
@@ -377,9 +383,15 @@ public class Robot extends TimedRobot {
 					if (scaleSide == 'L') {
 						if (autoMultiScale == 1) {
 							choice = "/home/lvuser/LeftMultiScaleL.csv";
+						} else if (autoSingleScale == 1) {
+							choice = "/home/lvuser/LeftScaleL.csv";
 						} else {
 							if (autoSameSide == 1) {
-								choice = "/home/lvuser/LeftMultiScaleL.csv";
+								if (autoSingleScale == 1) {
+									choice = "/home/lvuser/LeftScaleL.csv";
+								} else {
+									choice = "/home/lvuser/LeftMultiScaleL.csv";
+								}
 							} else {
 								choice = "/home/lvuser/LeftSwitchRScaleL.csv";
 							}
@@ -416,9 +428,15 @@ public class Robot extends TimedRobot {
 					} else {
 						if (autoMultiScale == 1) {
 							choice = "/home/lvuser/RightMultiScaleR.csv";
+						} else if (autoSingleScale == 1) {
+							choice = "/home/lvuser/RightScaleR.csv";
 						} else {
 							if (autoSameSide == 1) {
-								choice = "/home/lvuser/RightMultiScaleR.csv";
+								if (autoSingleScale == 1) {
+									choice = "/home/lvuser/RightScaleR.csv";
+								} else {
+									choice = "/home/lvuser/RightMultiScaleR.csv";
+								}
 							} else {
 								choice = "/home/lvuser/RightSwitchLScaleR.csv";
 							}
@@ -438,6 +456,8 @@ public class Robot extends TimedRobot {
 					} else {
 						if (autoMultiScale == 1) {
 							choice = "/home/lvuser/RightMultiScaleR.csv";
+						} else if (autoSingleScale == 1) {
+							choice = "/home/lvuser/RightScaleR.csv";
 						} else {
 							if (autoOrderChoice == 1) {
 								choice = "/home/lvuser/RightScaleFirst.csv";
@@ -900,19 +920,18 @@ public class Robot extends TimedRobot {
 
 		Arm.update();
 
-		if (xbox2.DPad() != -1 && !prevEndGame) {
-			releasePlatform = !releasePlatform;
-		}
-		prevEndGame = xbox2.DPad() != -1;
+//		if (xbox2.DPad() != -1 && !prevEndGame) {
+//			releasePlatform = !releasePlatform;
+//		}
+//		prevEndGame = xbox2.DPad() != -1;
 
-		SmartDashboard.putBoolean("Guides Released", releasePlatform);
+		SmartDashboard.putBoolean("Guides Released", xbox2.DPad() != -1);
 
-		if (releasePlatform) {
+		if (xbox2.DPad() != -1) {
 			Platform.release();
 		} else {
 			Platform.reset();
 		}
-
 
 		if (xbox2.Back()) {
 			Winch.set(-0.5);

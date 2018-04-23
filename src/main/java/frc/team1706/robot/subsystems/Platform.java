@@ -3,7 +3,7 @@ package frc.team1706.robot.subsystems;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 
 public class Platform {
-	private static DoubleSolenoid release = new DoubleSolenoid(1, 2);
+	private static DoubleSolenoid release = new DoubleSolenoid(2, 1);
 
 	public static void release() {
 		release.set(DoubleSolenoid.Value.kForward);
