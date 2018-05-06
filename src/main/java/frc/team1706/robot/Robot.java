@@ -142,9 +142,11 @@ public class Robot extends TimedRobot {
 
 		SmartDashboard.putNumber("DPAD", xbox1.DPad());
 
+//		System.out.println(Math.abs(xbox1.LStickX()));
+
 		// This will update the angle to keep the robot's orientation
-		if (Math.abs(RCW) > 0.132 || // If right stick is pressed
-				(Math.abs(FWD) < 0.01 && Math.abs(STR) < 0.01) && // If left stick is not pressed
+		if (Math.abs(xbox1.RStickX()) > 0.05 || // If right stick is pressed
+				(Math.abs(FWD) < 0.05 && Math.abs(STR) < 0.05) && // If left stick is not pressed
 						(xbox1.DPad() == -1) && // If dpad is not pressed
 						(!autonomous)) { // If teleop
 
@@ -785,33 +787,7 @@ public class Robot extends TimedRobot {
 
 		// rotate clockwise command (-1.0 to 1.0)
 		// Limited to half speed because of wheel direction calculation issues when rotating quickly
-		RCW = xbox1.RStickX() * 0.5;
-
-//		// Deadbands for joysticks
-//		if (Math.abs(xbox1.LStickY()) <= 0.11) {
-//			FWD = 0.0;
-//		} else if (FWD > 1.0) {
-//			FWD = 1.0;
-//		} else if (FWD < -1.0) {
-//			FWD = -1.0;
-//		}
-//
-//		if (Math.abs(xbox1.LStickX()) <= 0.079) {
-//			STR = 0.0;
-//		} else if (STR > 1.0) {
-//			STR = 1.0;
-//		} else if (STR < -1.0) {
-//			STR = -1.0;
-//		}
-//
-//		if (Math.abs(xbox1.RStickX()) <= 0.016) {
-//			RCW = 0.0;
-//		}
-
 		// Let robot rotate at full speed if it is not translating
-		if (FWD + STR == 0.0) {
-			RCW = xbox1.RStickX();
-		}
 
 		// Increase the time it takes for the robot to accelerate
 		currentRampTime = Time.get();
@@ -867,12 +843,12 @@ public class Robot extends TimedRobot {
 		double headingDeg = imu.getAngle();
 		double headingRad = MathUtils.degToRad(headingDeg);
 
-//		currentSlowButton = xbox1.X();
-//		if (currentSlowButton && !previousSlowButton) {
-//			slow = !slow;
-//
-//		}
-//		previousSlowButton = currentSlowButton;
+		currentSlowButton = xbox1.Start();
+		if (currentSlowButton && !previousSlowButton) {
+			slow = !slow;
+
+		}
+		previousSlowButton = currentSlowButton;
 
 		currentOrientedButton = xbox1.A();
 		if (currentOrientedButton && !previousOrientedButton) {
@@ -897,14 +873,14 @@ public class Robot extends TimedRobot {
 
 		if (xbox1.LStickButton()) {
 			FWD = 0.0;
-			STR = -0.85;
-			RCW = 0.25;
+			STR = 0.0;
+			RCW = 0.0;
 		}
 
 		if (xbox1.RStickButton()) {
 			FWD = 0.0;
-			STR = 0.95/2;
-			RCW = -0.52/2;
+			STR = 0.0;
+			RCW = 0.0;
 		}
 
 		SmartDashboard.putNumber("FWD", FWD);
@@ -914,6 +890,12 @@ public class Robot extends TimedRobot {
 		if (slow) {
 			STR /= 2;
 			FWD /= 2;
+		}
+
+		if (FWD + STR == 0.0) {
+			RCW = xbox1.RStickX();
+		} else {
+			RCW = xbox1.RStickX() * 0.5;
 		}
 
 		keepAngle();

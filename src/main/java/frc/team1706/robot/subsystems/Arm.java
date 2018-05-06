@@ -81,14 +81,14 @@ public class Arm {
 		shoulderA = new AnalogInput(0);
 		wristA = new AnalogInput(3);
 
-		shoulderPID = new PIDController(0.06, 0.0, 0.0);
+		shoulderPID = new PIDController(0.25, 0.0, 0.0);
 		shoulderPID.setInputRange((SHOULDER_MIN-SHOULDER_B)/SHOULDER_M, (SHOULDER_MAX-SHOULDER_B)/SHOULDER_M);
 		shoulderPID.setOutputRange(-1.0, 1.0);
 		shoulderPID.setContinuous(false);
 		shoulderPID.setTolerance(0.2);
 		shoulderPID.enable();
 
-		wristPID = new PIDController(0.022, 0.0, 0.0);
+		wristPID = new PIDController(0.025, 0.0, 0.0);
 		wristPID.setInputRange((WRIST_MIN-WRIST_B)/WRIST_M, (WRIST_MAX-WRIST_B)/WRIST_M);
 		wristPID.setOutputRange(-1.0, 1.0);
 		wristPID.setContinuous(false);
@@ -314,7 +314,11 @@ public class Arm {
 			shoulderPID.setInput(shoulderAngle);
 			shoulderPID.setSetpoint(shoulderSet);
 			if (shoulderPID.performPID() < 0.0) {
-				shoulderM.set(shoulderPID.performPID()*0.5);
+				if (shoulderAngle < -25.0) {
+					shoulderM.set(shoulderPID.performPID() * 0.25);
+				} else {
+					shoulderM.set(shoulderPID.performPID() * 0.5);
+				}
 			} else {
 				shoulderM.set(shoulderPID.performPID());
 			}
