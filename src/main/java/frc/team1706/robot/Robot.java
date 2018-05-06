@@ -12,15 +12,11 @@ import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.TimedRobot;
 import frc.team1706.robot.subsystems.*;
-//import frc.team1706.robot.subsystems.PowerPanel;
+import frc.team1706.robot.subsystems.PowerPanel;
 import frc.team1706.robot.subsystems.SwerveDrivetrain.WheelType;
-import frc.team1706.robot.utilities.MathUtils;
-import frc.team1706.robot.utilities.PIDController;
-import frc.team1706.robot.utilities.Vector;
+import frc.team1706.robot.utilities.*;
 import frc.team1706.robot.RRLogger;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -37,7 +33,6 @@ public class Robot extends TimedRobot {
 
 	public static XboxController xbox1 = new XboxController(0);
 	public static XboxController xbox2 = new XboxController(1);
-//	private static XboxController endbox = new XboxController(2);
 
 	private int autonomousChoice;
 	private int autoOrderChoice;
@@ -61,15 +56,13 @@ public class Robot extends TimedRobot {
 	private double[][] commands;
 	private int arrayIndex = -1;
 	private int autoMove = 0;
-	private double time = 0;
+	private int translateType;
 	private double autonomousAngle;
 	private double tSpeed;
 	private double rSpeed;
-	private double PIDSpeed;
-	private double initialPitch;
-	private double previousDistance;
-	private double currentDistance;
-	private double currentTime = 0;
+	private double previousDistance = 0.0;
+	private double currentDistance = 0.0;
+	private boolean override;
 	private boolean driveDone;
 	private boolean turnDone;
 	private boolean timeDone;
@@ -79,6 +72,12 @@ public class Robot extends TimedRobot {
 	private double prevOffset = 0;
 	private double timeBase;
 	private boolean timeCheck;
+	private double smoothArc;
+	private double smoothRotate;
+	private boolean smoothRotateStarted = false;
+	private double smoothTranslate;
+	private double initialAngle;
+	private double initialError;
 
 	private int dx = -1;
 
@@ -112,7 +111,6 @@ public class Robot extends TimedRobot {
 	private double command = 0;
 
 	private PIDController SwerveCompensate;
-	private PIDController AutoTranslate;
 
 	private double lead;
 
@@ -250,6 +248,8 @@ public class Robot extends TimedRobot {
 
  		compressor = new Compressor(0);
 
+		xbox1.setDeadband(0.01);
+
 		Time.start();
 
 		SwerveDrivetrain.loadPorts();
@@ -285,19 +285,15 @@ public class Robot extends TimedRobot {
 		imu = new IMU();
 		imu.IMUInit();
 
+		keepAngle = imu.getAngle();
+
 		SwerveCompensate = new PIDController(0.015, 0.00, 0.00);
 		SwerveCompensate.setContinuous(true);
 		SwerveCompensate.setOutputRange(-1.0, 1.0);
 		SwerveCompensate.setInputRange(0.0, 360.0);
 		SwerveCompensate.setTolerance(1.0);
 
-		AutoTranslate = new PIDController(01.000, 0.0, 0.0);
-		AutoTranslate.setContinuous(false);
-		AutoTranslate.setOutputRange(-1.0, 1.0);
-		AutoTranslate.setInputRange(0.0, 250.0);
-
 		SwerveCompensate.enable();
-		AutoTranslate.enable();
 	}
 
 	public void autonomousInit() {
@@ -477,9 +473,11 @@ public class Robot extends TimedRobot {
 
 		SmartDashboard.putString("Autonomous File", choice);
 
-		time = 0;
+		imu.reset(0);
 		arrayIndex = 0;
-		Arm.auto = true;
+		initialAngle = imu.getAngle();
+		turnDone = false;
+		driveDone = false;
 
 		log.start();
 
@@ -531,7 +529,6 @@ public class Robot extends TimedRobot {
 				if (Time.get() > timeBase + SmartDashboard.getNumber("Autonomous Delay", 0)) {
 					autoMove = 1;
 				}
-				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance();
 				previousDistance = currentDistance;
 
 				break;
@@ -543,10 +540,13 @@ public class Robot extends TimedRobot {
 				SmartDashboard.putNumber("IMU Angle", imu.getAngle());
 
 				/*
-				 * 0 = translate speed, 1 = rotate speed, 2 = direction to translate, 3 = direction to face,
-				 * 4 = distance(in), 6 = moonSTR, 7 = moonRCW, 8 = moonAngle, 10 = time out(seconds), 11 = check for collision,
-				 * 12 = imu offset, 13 = arm position, 14 = hand position, 15  = check for havecube, 16 = check for nearcube
-				 * 17 = check for wall, 18 = check for onCube
+				 * 0 = translate speed, 1 = rotate speed, 2 = direction to translate, 3 = direction to face (Maintain, not turn),
+				 * 4 = distance(in), 5 = How to translate(0 = no modification, 1 = smooth start and end, 2 = smooth start, 3 = smooth end)
+				 * 6 = smoothArcStartAngle, 7 = smoothArcEndAngle, 8 = smoothRotate
+				 * 9 = time out(seconds), 10 = imu offset
+				 *
+				 * 13 = arm position, 14 = hand position, 15  = check for havecube,
+				 * 16 = check for nearcube, 17 = check for wall, 18 = check for onCube
 				 */
 				//Note: use moonRCW to rotate robot
 
@@ -568,39 +568,69 @@ public class Robot extends TimedRobot {
 
 				Arm.update();
 
-				currentDistance = SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance();
-
 				tSpeed = commands[arrayIndex][0];
 				rSpeed = commands[arrayIndex][1];
 
 				if (commands[arrayIndex][2] != -1) {
-					FWD = Math.cos(MathUtils.degToRad(commands[arrayIndex][2]));
-					STR = Math.sin(MathUtils.degToRad(commands[arrayIndex][2]));
+					FWD = Math.cos(Math.toRadians(commands[arrayIndex][2]));
+					STR = Math.sin(Math.toRadians(commands[arrayIndex][2]));
 				} else {
 					FWD = 0;
 					STR = 0;
 				}
 
-				if (commands[arrayIndex][4] != -1) {
-					AutoTranslate.setInput(Math.abs(currentDistance - previousDistance));
-					AutoTranslate.setSetpoint(commands[arrayIndex][4]);
-					PIDSpeed = AutoTranslate.performPID();
+				if (commands[arrayIndex][6] <= 360.0 && commands[arrayIndex][6] >= -360.0) {
+					smoothArc = Math.toRadians(MathUtils.convertRange(0.0, commands[arrayIndex][4], commands[arrayIndex][6], commands[arrayIndex][7], Math.abs(currentDistance - previousDistance)));
+					FWD = Math.cos(smoothArc);
+					STR = Math.sin(smoothArc);
 				}
 
-				SmartDashboard.putNumber("Array Index", arrayIndex);
+				if (commands[arrayIndex][8] <= 360.0 && commands[arrayIndex][8] >= -360.0) {
+					double direction;
+					if (!smoothRotateStarted) {
+						initialError = MathUtils.getAngleError(imu.getAngle(), commands[arrayIndex][8]);
+						smoothRotateStarted = true;
+					}
+
+					smoothRotate = (MathUtils.convertRange(initialError, commands[arrayIndex][8], 0.0, 2.0, MathUtils.getAngleError(imu.getAngle(), commands[arrayIndex][8])));
+					direction = commands[arrayIndex][8]-initialAngle;
+					if (Math.abs(direction) > 180.0) {
+						direction *= -1.0;
+					}
+					RCW = Math.signum(direction) * -Math.sqrt(0.25*smoothRotate)+0.75;
+
+					if (Math.abs(MathUtils.resolveDeg(imu.getAngle() - commands[arrayIndex][8])) < 5.0) {
+						turnDone = true;
+						keepAngle = commands[arrayIndex][8];
+					}
+				} else {
+					smoothRotateStarted = false;
+					autonomousAngle = commands[arrayIndex][3];
+					initialAngle = imu.getAngle();
+					turnDone = true;
+				}
+
+//				System.out.println(MathUtils.resolveDeg(commands[arrayIndex][8]-initialAngle));
+//				System.out.println(RCW);
+
+				if (commands[arrayIndex][5] == 1) {
+					smoothTranslate = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], -2.0, 1.8, currentDistance));
+					FWD *= 0.5*Math.cos(smoothTranslate)+0.5;
+					STR *= 0.5*Math.cos(smoothTranslate)+0.5;
+				} else if (commands[arrayIndex][5] == 2) {
+					smoothTranslate = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], -2.0, 0.0, currentDistance));
+					FWD *= 0.5*Math.cos(smoothTranslate)+0.5;
+					STR *= 0.5*Math.cos(smoothTranslate)+0.5;
+				} else if (commands[arrayIndex][5] == 3) {
+					smoothTranslate = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], 0.0, 1.8, currentDistance));
+					FWD *= 0.5*Math.cos(smoothTranslate)+0.5;
+					STR *= 0.5*Math.cos(smoothTranslate)+0.5;
+				}
 
 				Vector driveCommands;
-				driveCommands = MathUtils.convertOrientation(MathUtils.degToRad(imu.getAngle()), FWD, STR);
-				FWD = driveCommands.getY() * tSpeed * PIDSpeed;
-				STR = driveCommands.getX() * tSpeed * PIDSpeed;
-
-				autonomousAngle = commands[arrayIndex][3];
-
-				// FIXME
-				if (autonomousAngle != -1) {
-					autonomousAngle(autonomousAngle);
-				}
-
+				driveCommands = MathUtils.convertOrientation(Math.toRadians(imu.getAngle()), FWD, STR);
+				FWD = driveCommands.getY() * tSpeed;
+				STR = driveCommands.getX() * tSpeed;
 				RCW *= rSpeed;
 
 				if (((Math.abs(currentDistance - previousDistance) >= commands[arrayIndex][4]) || commands[arrayIndex][4] == 0) && commands[arrayIndex][6] == -2) {
@@ -613,46 +643,22 @@ public class Robot extends TimedRobot {
 				SmartDashboard.putNumber("Auto Distance Command", commands[arrayIndex][4]);
 
 				SwerveCompensate.setTolerance(1);
-				if (SwerveCompensate.onTarget() || commands[arrayIndex][3] == -1) {
-					turnDone = true;
-					RCW = 0;
-				}
+//				if ((SwerveCompensate.onTarget() || commands[arrayIndex][3] == -1) && !(commands[arrayIndex][8] <= 360.0 && commands[arrayIndex][8] >= -360.0)) {
+//					turnDone = true;
+//					RCW = 0;
+//					System.out.println("AAA");
+//				}
 
-				if (Time.get() > timeBase + commands[arrayIndex][10] && commands[arrayIndex][10] > 0) {
-					timeDone = true;
-					collisionDone = true;
-					driveDone = true;
-					turnDone = true;
-					moonDone = true;
-				} else if (commands[arrayIndex][10] == 0) {
+				if (Time.get() > timeBase + commands[arrayIndex][9] && commands[arrayIndex][9] > 0) {
+					override = true;
+				} else if (commands[arrayIndex][9] == 0) {
 					timeDone = true;
 				}
 
-				if (commands[arrayIndex][11] == 1) {
-					if (imu.collisionDetected()) {
-						collisionDone = true;
-						driveDone = true;
-						turnDone = true;
-						timeDone = true;
-					}
-				} else {
-					collisionDone = true;
-				}
+				imuOffset = commands[arrayIndex][10];
 
-				imuOffset = commands[arrayIndex][12];
-
-				if (commands[arrayIndex][6] != -2) {
-					STR = commands[arrayIndex][6];
-					RCW = commands[arrayIndex][7];
-					if (commands[arrayIndex][8] >= imu.getAngle() - 5.0 && commands[arrayIndex][8] <= imu.getAngle() + 5.0) {
-						moonDone = true;
-						collisionDone = true;
-						driveDone = true;
-						turnDone = true;
-						timeDone = true;
-					}
-				} else {
-					moonDone = true;
+				if (turnDone) {
+					keepAngle();
 				}
 
 				SmartDashboard.putNumber("FWD", FWD);
@@ -666,31 +672,24 @@ public class Robot extends TimedRobot {
 				}
 
 				if (commands[arrayIndex][15] == 1 && Arm.haveCube) {
-					collisionDone = true;
-					driveDone = true;
-					turnDone = true;
-					moonDone = true;
+					override = true;
 				}
 
 				if (commands[arrayIndex][16] == 1 && Arm.nearCube) {
-					collisionDone = true;
-					driveDone = true;
-					turnDone = true;
-					moonDone = true;
+					override = true;
 				}
 
 				if (commands[arrayIndex][17] == 1 && Arm.onWall) {
-					collisionDone = true;
-					driveDone = true;
-					turnDone = true;
-					moonDone = true;
+					override = true;
 				}
 
 				if (commands[arrayIndex][18] == 1 && Arm.onCube) {
-					collisionDone = true;
+					override = true;
+				}
+
+				if (override) {
 					driveDone = true;
 					turnDone = true;
-					moonDone = true;
 				}
 
 //				System.out.println("Index: " + arrayIndex);
@@ -701,13 +700,13 @@ public class Robot extends TimedRobot {
 //				System.out.println("Time: " + timeDone);
 //				System.out.println("TimeNum: " + Time.get() + " | " + (timeBase + commands[arrayIndex][10]));
 
-				if (driveDone && turnDone && collisionDone && moonDone) {
+				if (driveDone && turnDone) {
 					arrayIndex++;
 					driveDone = false;
 					previousDistance = currentDistance;
 					turnDone = false;
 					timeDone = false;
-					collisionDone = false;
+					override = false;
 					timeBase = Time.get();
 
 				}
@@ -762,12 +761,10 @@ public class Robot extends TimedRobot {
 		SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).setOffset(SmartDashboard.getNumber("BL offset: ", 0));
 		SwerveDrivetrain.swerveModules.get(WheelType.BACK_RIGHT).setOffset(SmartDashboard.getNumber("BR offset: ", 0));
 
-		log.newPowerLine();
-
-		log.addPower("Wrist", PowerPanel.two());
-//		log.addPower("Wrist", PowerPanel.two());
-
-		SmartDashboard.putNumber("Distance", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance());
+		SmartDashboard.putNumber("DistanceFR", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_RIGHT).getDistance());
+		SmartDashboard.putNumber("DistanceFL", SwerveDrivetrain.swerveModules.get(WheelType.FRONT_LEFT).getDistance());
+		SmartDashboard.putNumber("DistanceBL", SwerveDrivetrain.swerveModules.get(WheelType.BACK_LEFT).getDistance());
+		SmartDashboard.putNumber("DistanceBR", SwerveDrivetrain.swerveModules.get(WheelType.BACK_RIGHT).getDistance());
 
 		if (xbox1.Back()) {
 			imu.reset(0); // robot should be perpendicular to field when pressed.
@@ -785,10 +782,6 @@ public class Robot extends TimedRobot {
 		// strafe command (-1.0 to 1.0)
 		STR = xbox1.LStickX() / 10.5 * Ds.getBatteryVoltage();
 
-		// rotate clockwise command (-1.0 to 1.0)
-		// Limited to half speed because of wheel direction calculation issues when rotating quickly
-		// Let robot rotate at full speed if it is not translating
-
 		// Increase the time it takes for the robot to accelerate
 		currentRampTime = Time.get();
 		if (FWD != 0.0 || STR != 0.0 || RCW != 0.0) {
@@ -803,7 +796,6 @@ public class Robot extends TimedRobot {
 
 			FWD *= wheelRamp;
 			STR *= wheelRamp;
-			RCW *= wheelRamp;
 		} else {
 			prevRampTime = currentRampTime;
 		}
@@ -841,14 +833,7 @@ public class Robot extends TimedRobot {
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
 
 		double headingDeg = imu.getAngle();
-		double headingRad = MathUtils.degToRad(headingDeg);
-
-		currentSlowButton = xbox1.Start();
-		if (currentSlowButton && !previousSlowButton) {
-			slow = !slow;
-
-		}
-		previousSlowButton = currentSlowButton;
+		double headingRad = Math.toRadians(headingDeg);
 
 		currentOrientedButton = xbox1.A();
 		if (currentOrientedButton && !previousOrientedButton) {
@@ -892,6 +877,9 @@ public class Robot extends TimedRobot {
 			FWD /= 2;
 		}
 
+		// rotate clockwise command (-1.0 to 1.0)
+		// Limited to half speed because of wheel direction calculation issues when rotating quickly
+		// Let robot rotate at full speed if it is not translating
 		if (FWD + STR == 0.0) {
 			RCW = xbox1.RStickX();
 		} else {
@@ -934,6 +922,11 @@ public class Robot extends TimedRobot {
 		} else {
 			driveTrain.drive(new Vector(STR, FWD), RCW); // x = str, y = fwd, rotation = rcw
 		}
+	}
+
+	public void robotPeriodic() {
+		currentDistance += SwerveDrivetrain.getRobotDistance();
+		SmartDashboard.putNumber("Distance", currentDistance);
 	}
 
 	public void disabledInit() {

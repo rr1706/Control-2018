@@ -1,5 +1,8 @@
 package frc.team1706.robot.utilities;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.team1706.robot.subsystems.SwerveDrivetrain;
+
 /**
  * Various math functions
  *
@@ -53,6 +56,19 @@ public class MathUtils {
 		return newValue;
 	}
 
+	public static double getAngleError(double input, double setpoint) {
+		double error = setpoint - input;
+		if (Math.abs(error) > 180.0) {
+			if (error > 0) {
+				error -= 360.0;
+			} else {
+				error += 360.0;
+			}
+		}
+		return error;
+	}
+
+
 	public static double calculateError(double direction, double sensor) {
 		double error = direction - sensor;
 		if (Math.abs(error) > 5.236) { // 300 Degrees
@@ -63,20 +79,6 @@ public class MathUtils {
 			}
 		}
 		return error;
-	}
-
-	/**
-	 * Converts a number from radians to degrees
-	 */
-	public static double radToDeg(double x) {
-		return x * 180.0 / Math.PI;
-	}
-
-	/**
-	 * Converts a number from degrees to radians
-	 */
-	public static double degToRad(double x) {
-		return x * Math.PI / 180;
 	}
 
 	public static double meterToInch(double x) {

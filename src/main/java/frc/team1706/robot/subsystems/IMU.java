@@ -1,11 +1,9 @@
 package frc.team1706.robot.subsystems;
 
-import frc.team1706.robot.utilities.MathUtils;
-
-import com.kauailabs.navx.frc.AHRS; // http://www.pdocs.kauailabs.com/navx-mxp/
-
+import com.kauailabs.navx.frc.AHRS;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SPI;
+import frc.team1706.robot.utilities.MathUtils;
 
 public class IMU {
 	private static AHRS ahrs;
@@ -35,14 +33,21 @@ public class IMU {
 		}
 	}
 
-	public static double getAngle() {
+	public double getAngle() {
 		//This returns degrees (0 to 360)
 		return MathUtils.resolveDeg(ahrs.getYaw() + offset);
-//		return 0;
 	}
 
-	public static double getVelocity() {
+	public double getVelocity() {
 		return Math.sqrt((Math.pow(ahrs.getVelocityX(), 2) + Math.pow(ahrs.getVelocityY(), 2)));
+	}
+
+	public double getDistance() {
+		return MathUtils.meterToInch(Math.sqrt(Math.pow(ahrs.getDisplacementX(), 2) + Math.pow(ahrs.getDisplacementY(), 2)));
+	}
+
+	public void resetDistance() {
+		ahrs.resetDisplacement();
 	}
 
 	public boolean collisionDetected() {

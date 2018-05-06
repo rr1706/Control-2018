@@ -3,10 +3,8 @@ package frc.team1706.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Talon;
-
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.team1706.robot.utilities.MathUtils;
 import frc.team1706.robot.utilities.Vector;
@@ -20,7 +18,8 @@ public class SwerveModule {
 	private double speedCommand;
 	private double angleCommand;
 	private double distance;
-	private double previousDistance = 0;
+	private double previousDistance = 0.0;
+	private double previousRobotDistance = 0.0;
 	private double delta;
 	private double angleError;
 	private double rightSum = 0;
@@ -29,12 +28,12 @@ public class SwerveModule {
 	private TalonSRX rotationMotor;
 	private Encoder encoder;
 	private boolean wheelReversed;
-	private boolean movingRight;
-	private boolean movingFor;
 	private double rawError;
-	private double rac;
 	private double rightDelta;
 	private double forwardDelta;
+	private double currentAngle;
+
+	private int encoderCheck = 0;
 
 	private double i;
 	private double j;
@@ -42,6 +41,8 @@ public class SwerveModule {
 	private double z;
 
 	private int id;
+
+	private boolean encoderAlive = true;
 
 	/**
 	 */
@@ -64,35 +65,26 @@ public class SwerveModule {
 
 	void drive() {
 
+		currentAngle = rotationMotor.getSensorCollection().getAnalogIn();
+
 		distance = encoder.getDistance();
 
 		angleError = rotationMotor.getClosedLoopError(0);
 
-		/*
-		 * If the error is greater than 90 then change direction by 180
-		 * and reverse the wheel speed command.
-		 * Also adjust error now to match the new wheel command.
-		 */
 		rawError = angleError;
 
-		if (wheelReversed) {
-			delta = previousDistance - distance;
-		} else {
-			delta = distance - previousDistance;
-		}
+		delta = distance - previousDistance;
 
 		if (speedCommand == 0) {
 			angleError = 0;
 		}
 
-
-
 		//Count rotation cycles of wheel
-		i = Math.floor(rotationMotor.getSensorCollection().getAnalogIn() / 1024);
+		i = Math.floor(currentAngle / 1024);
 		//Set command + rotations (wrap command)
 		j = this.angleCommand + i * 1024;
 		//Set wrapped command - current position (error)
-		k = j - rotationMotor.getSensorCollection().getAnalogIn();
+		k = j - currentAngle;
 
 		/*
 		 * If the error is greater than 512 units (180 degrees), have wheel go to next
@@ -105,11 +97,11 @@ public class SwerveModule {
 		}
 
 		/*
-		 * If the wheel has to move over 256 units (45 degrees)
+		 * If the wheel has to move over 256 units (90 degrees)
 		 * go opposite to command and reverse translation
 		 */
-		if (Math.abs(MathUtils.getDelta(-z, rotationMotor.getSensorCollection().getAnalogIn())) > 256) {
-			z += Math.signum(MathUtils.getDelta(-z, rotationMotor.getSensorCollection().getAnalogIn())) * 512;
+		if (Math.abs(MathUtils.getDelta(-z, currentAngle)) > 256) {
+			z += Math.signum(MathUtils.getDelta(-z, currentAngle)) * 512;
 			wheelReversed = true;
 			this.speedCommand *= -1;
 
@@ -118,7 +110,7 @@ public class SwerveModule {
 		}
 
 		/*
-		 * If wheel direction has to change more than 128 units (22.5 degrees)
+		 * If wheel direction has to change more than 128 units (45 degrees)
 		 * then set wheel speed command to 0 while wheel is turning.
 		 */
 		if (Math.abs(angleError) < 128) {
@@ -129,32 +121,34 @@ public class SwerveModule {
 
 		if (Math.abs(this.speedCommand) >= 0.1) {
 			rotationMotor.set(ControlMode.Position, z);
-
 		}
 
+		if ((SwerveDrivetrain.getRobotDistance() != previousRobotDistance) && (distance == previousDistance)) {
+			encoderCheck++;
+		} else {
+			encoderCheck = 0;
+		}
+
+		if (encoderCheck == 5) {
+			encoderAlive = false;
+		}
+
+		//Debugging
 		if (id == 1) {
-//			SmartDashboard.putNumber("Error", rotationMotor.getClosedLoopError(0));
-//			SmartDashboard.putNumber("Motor Angle", rotationMotor.getSelectedSensorPosition(0));
-//			SmartDashboard.putNumber("Joystick Command", this.angleCommand);
-//			SmartDashboard.putNumber("Wheel Cycle", i);
-//			SmartDashboard.putNumber("Pre Angle Command", j);
-//			SmartDashboard.putNumber("Error", k);
-//			SmartDashboard.putNumber("Angle Command", -z);
-//
-//			System.out.println(this.angleCommand+","+i+","+j+","+k+","+z+","+rotationMotor.getClosedLoopError(0)+","+rotationMotor.getSelectedSensorPosition(0)+","+SmartDashboard.getNumber("2018 SRX Test", 0));
+			SmartDashboard.putNumber("Motor AngleFR", Math.toDegrees(MathUtils.resolveAngle(Math.toRadians(currentAngle / 1024 * 360 - Math.toDegrees(offset)))));
+		} else if (id == 2) {
+			SmartDashboard.putNumber("Motor AngleFL", Math.toDegrees(MathUtils.resolveAngle(Math.toRadians(currentAngle / 1024 * 360 - Math.toDegrees(offset)))));
+		} else if (id == 3) {
+			SmartDashboard.putNumber("Motor AngleBL", Math.toDegrees(MathUtils.resolveAngle(Math.toRadians(currentAngle / 1024 * 360 - Math.toDegrees(offset)))));
+		} else {
+			SmartDashboard.putNumber("Motor AngleBR", Math.toDegrees(MathUtils.resolveAngle(Math.toRadians(currentAngle / 1024 * 360 - Math.toDegrees(offset)))));
 		}
 
-		rightDelta = delta * Math.sin(MathUtils.degToRad(rac));
-		forwardDelta = delta * Math.cos(MathUtils.degToRad(rac));
-
-		movingRight = (Math.sin(MathUtils.degToRad(rac - MathUtils.radToDeg(offset))) > 0);
-
-		movingFor = (Math.cos(MathUtils.degToRad(rac - MathUtils.radToDeg(offset))) > 0);
-
-		rightSum += rightDelta;
-		forwardSum += forwardDelta;
+		rightDelta = delta * Math.sin(MathUtils.resolveAngle(Math.toRadians(currentAngle / 1024 * 360 - Math.toDegrees(offset))));
+		forwardDelta = delta * Math.cos(MathUtils.resolveAngle(Math.toRadians(currentAngle / 1024 * 360 - Math.toDegrees(offset))));
 
 		previousDistance = distance;
+		previousRobotDistance = SwerveDrivetrain.getRobotDistance();
 
 	}
 
@@ -173,7 +167,7 @@ public class SwerveModule {
 	}
 
 	public double getAngle() {
-		return MathUtils.convertRange(0, 1024, 0, 360, rotationMotor.getSensorCollection().getAnalogIn());
+		return MathUtils.convertRange(0, 1024, 0, 360, currentAngle);
 	}
 
 	void setSpeedCommand(double speedCommand) {
@@ -197,7 +191,7 @@ public class SwerveModule {
 	}
 
 	public void setOffset(double offset) {
-		this.offset = MathUtils.degToRad(offset);
+		this.offset = Math.toRadians(offset);
 	}
 
 	Vector getPosition() {
@@ -249,15 +243,21 @@ public class SwerveModule {
 		return rawError;
 	}
 
-	public double getrac() {
-		return rac;
+	public double[] getXYDist() {
+		if (wheelReversed) {
+			forwardSum *= -1.0;
+			rightSum *= -1.0;
+		}
+		double[] i = {rightDelta, forwardDelta};
+		double[] j = {0.0, 0.0};
+		if (encoderAlive) {
+			return i;
+		} else {
+			return j;
+		}
 	}
 
-	public boolean getRight() {
-		return movingRight;
-	}
-
-	public boolean getFor() {
-		return movingFor;
+	public boolean getEncoderAlive() {
+		return encoderAlive;
 	}
 }
