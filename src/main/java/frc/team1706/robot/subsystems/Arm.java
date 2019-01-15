@@ -26,14 +26,14 @@ public class Arm {
 	private static int grabTime = 0;
 	private static int grabCase = 0;
 
-	private static final double grabPoint = -56.0;
-	private static final double holdPoint = -56.0;
-	private static final double switchPoint = -56.0;
+	private static final double grabPoint = -55.0;
+	private static final double holdPoint = -55.0;
+	private static final double switchPoint = -55.0;
 	private static final double hswitchPoint = -10.0;
 	private static final double lScalePoint = 8.0;
 	private static final double mScalePoint = 21.0;
 	private static final double hScalePoint = 47.0;
-	private static final double behindPoint = 5;
+	private static final double behindPoint = 51.0;
 	private static final double vaultPoint = 5;
 	private static final double climbPoint = 70;
 
@@ -45,6 +45,10 @@ public class Arm {
 
 	private static double shoulderAngle = 0.0;
 	private static double wristAngle = 90.0;
+
+	private static double armCounter = 0.0;
+	private static double armBase = 0.0;
+	private static boolean armBaseSet = false;
 
 	private static PIDController shoulderPID;
 	private static PIDController wristPID;
@@ -74,7 +78,6 @@ public class Arm {
 	public static void init() {
 
 		shoulderM = new VictorSP(4);
-
 
 		wristM = new VictorSP(5);
 
@@ -114,6 +117,9 @@ public class Arm {
 		shoulderAngle = shoulderA.getValue();
 		wristAngle = wristA.getValue();
 
+		//Ethan/Aadi thing
+		SmartDashboard.putNumber("Shoulder Error", shoulderAngle-shoulderSet);
+
 		SmartDashboard.putNumber("Shoulder AngleDeg", (shoulderAngle-SHOULDER_B)/SHOULDER_M);
 		SmartDashboard.putNumber("Wrist AngleDeg", (wristAngle-WRIST_B)/WRIST_M);
 
@@ -122,6 +128,8 @@ public class Arm {
 
 		shoulderAngle = (shoulderAngle-SHOULDER_B)/SHOULDER_M;
 		wristAngle = (wristAngle-WRIST_B)/WRIST_M;
+
+//		System.out.println("M: " + WRIST_M + "\n" + "B: " + WRIST_B + "\n" + "Y: " + wristAngle);
 
 		switch (manualToggle) {
 			case 0:
@@ -143,7 +151,6 @@ public class Arm {
 				break;
 		}
 //		System.out.println("nearCube: " + nearCube + " | haveCube: " + haveCube);
-
 		if (!manual || auto) {
 			if (((armCase == 0 && !Robot.xbox2.B()) || armCase == 3 || armCase == 6 || armCase == 9 || armCase == 12 || armCase == 15 || armCase == 18 || armCase == 24) && !auto ) {
 				if (Robot.xbox2.A() && Robot.xbox2.LStickX() > 0.5) {
@@ -257,7 +264,18 @@ public class Arm {
 					if (auto) {
 						shoulderSet = lScalePoint;
 					} else {
-						shoulderSet = scaleEq(-Robot.xbox2.LStickY());
+						if (Robot.xbox2.B()) {
+							if (!armBaseSet) {
+								armBase = -Robot.xbox2.LStickY();
+								armBaseSet = true;
+							}
+							armCounter += -Robot.xbox2.LStickY() * .02;
+							shoulderSet = scaleEq(armBase + armCounter);
+						} else {
+							armCounter = 0.0;
+							shoulderSet = scaleEq(-Robot.xbox2.LStickY());
+							armBaseSet = false;
+						}
 					}
 					wristCheck = 3;
 
@@ -267,7 +285,18 @@ public class Arm {
 					if (auto) {
 						shoulderSet = mScalePoint;
 					} else {
-						shoulderSet = scaleEq(-Robot.xbox2.LStickY());
+						if (Robot.xbox2.B()) {
+							if (!armBaseSet) {
+								armBase = -Robot.xbox2.LStickY();
+								armBaseSet = true;
+							}
+							armCounter += -Robot.xbox2.LStickY() * .02;
+							shoulderSet = scaleEq(armBase + armCounter);
+						} else {
+							armCounter = 0.0;
+							shoulderSet = scaleEq(-Robot.xbox2.LStickY());
+							armBaseSet = false;
+						}
 					}
 					wristCheck = 3;
 
@@ -277,9 +306,32 @@ public class Arm {
 					if (auto) {
 						shoulderSet = hScalePoint;
 					} else {
-						shoulderSet = scaleEq(-Robot.xbox2.LStickY());
+						if (Robot.xbox2.B()) {
+							if (!armBaseSet) {
+								armBase = -Robot.xbox2.LStickY();
+								armBaseSet = true;
+							}
+							armCounter += -Robot.xbox2.LStickY() * .02;
+							shoulderSet = scaleEq(armBase + armCounter);
+						} else {
+							armCounter = 0.0;
+							shoulderSet = scaleEq(-Robot.xbox2.LStickY());
+							armBaseSet = false;
+						}
 					}
 					wristCheck = 3;
+
+					break;
+
+				case 13:
+					shoulderSet = hScalePoint;
+					wristCheck = 2;
+
+					break;
+
+				case 14:
+					shoulderSet = hScalePoint;
+					wristCheck = 2;
 
 					break;
 
@@ -291,12 +343,6 @@ public class Arm {
 
 				case 18:
 					shoulderSet = vaultPoint;
-
-					break;
-
-				case 21:
-					shoulderSet = climbPoint;
-					updateWrist(7);
 
 					break;
 
@@ -320,13 +366,19 @@ public class Arm {
 					shoulderM.set(shoulderPID.performPID() * 0.5);
 				}
 			} else {
-				shoulderM.set(shoulderPID.performPID());
+				if (shoulderPID.onTarget()) {
+					shoulderM.set(0.0);
+				} else {
+					shoulderM.set(shoulderPID.performPID());
+				}
 			}
 
 		} else {
 
 			if (!Robot.xbox2.A()) {
 				shoulderM.set(-Robot.xbox2.LStickY());
+				//Ethan thing
+				SmartDashboard.putNumber("LStickY", -Robot.xbox2.LStickY());
 				if (Robot.xbox2.LB()) {
 					updateWrist(2);
 				} else {
@@ -360,7 +412,7 @@ public class Arm {
 				break;
 			case 2:
 				//Hold
-				wristSet = 256;
+				wristSet = 250;
 				break;
 			case 3:
 				//Place
@@ -380,11 +432,6 @@ public class Arm {
 			case 6:
 				//Push Place
 				wristSet = 180 - shoulderAngle;
-				break;
-
-			case 7:
-				//Climb
-				wristSet = 50;
 				break;
 		}
 

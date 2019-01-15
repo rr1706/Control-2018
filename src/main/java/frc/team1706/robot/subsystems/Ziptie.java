@@ -8,7 +8,7 @@ public class Ziptie {
 
 	public static void deploy() {
 		tie1.set(0.3);
-		tie2.set(0.7);
+		tie2.set(0.8);
 	}
 
 	public static void stop() {

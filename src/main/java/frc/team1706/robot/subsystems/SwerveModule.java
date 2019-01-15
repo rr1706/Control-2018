@@ -6,6 +6,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.team1706.robot.Robot;
 import frc.team1706.robot.utilities.MathUtils;
 import frc.team1706.robot.utilities.Vector;
 
@@ -121,17 +122,29 @@ public class SwerveModule {
 
 		if (Math.abs(this.speedCommand) >= 0.1) {
 			rotationMotor.set(ControlMode.Position, z);
+
+			// Set wheels to "X" shape
+		} else if (Robot.xbox1.DPad() != -1 || Robot.xbox2.LTrig() > 0.5) {
+			if (id == 1) {
+				rotationMotor.set(ControlMode.Position, /*MathUtils.resolvePot(*/384 - MathUtils.radToPot(offset) - i * 1024);
+			} else if (id == 2) {
+				rotationMotor.set(ControlMode.Position, /*MathUtils.resolvePot(*/128 - MathUtils.radToPot(offset) - i * 1024);
+			} else if (id == 3) {
+				rotationMotor.set(ControlMode.Position, /*MathUtils.resolvePot(*/384 - MathUtils.radToPot(offset) - i * 1024);
+			} else{
+				rotationMotor.set(ControlMode.Position, /*MathUtils.resolvePot(*/128 - MathUtils.radToPot(offset) - i * 1024);
+			}
 		}
 
-		if ((SwerveDrivetrain.getRobotDistance() != previousRobotDistance) && (distance == previousDistance)) {
-			encoderCheck++;
-		} else {
-			encoderCheck = 0;
-		}
-
-		if (encoderCheck == 5) {
-			encoderAlive = false;
-		}
+//		if ((SwerveDrivetrain.getRobotDistance() != previousRobotDistance) && (distance == previousDistance)) {
+//			encoderCheck++;
+//		} else {
+//			encoderCheck = 0;
+//		}
+//
+//		if (encoderCheck == 5) {
+//			encoderAlive = false;
+//		}
 
 		//Debugging
 		if (id == 1) {
@@ -250,11 +263,11 @@ public class SwerveModule {
 		}
 		double[] i = {rightDelta, forwardDelta};
 		double[] j = {0.0, 0.0};
-		if (encoderAlive) {
-			return i;
-		} else {
-			return j;
-		}
+//		if (encoderAlive) {
+		return i;
+//		} else {
+//			return j;
+//		}
 	}
 
 	public boolean getEncoderAlive() {

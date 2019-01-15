@@ -1,6 +1,7 @@
 package frc.team1706.robot.subsystems;
 
 import edu.wpi.first.wpilibj.PowerDistributionPanel;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class PowerPanel {
 	private static PowerDistributionPanel pdp = new PowerDistributionPanel();

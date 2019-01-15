@@ -5,7 +5,7 @@ plugins {
     id "jaci.openrio.gradle.GradleRIO" version "2018.03.06"
 }
 
-def TEAM = 1706
+def TEAM = 1707
 def ROBOT_CLASS = "frc.team"+TEAM+".robot.Robot"
 
 // Define my targets (RoboRIO) and artifacts (deployable files)

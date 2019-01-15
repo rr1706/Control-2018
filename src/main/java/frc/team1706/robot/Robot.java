@@ -134,10 +134,6 @@ public class Robot extends TimedRobot {
 
 		SwerveCompensate.enable();
 
-		if (xbox1.DPad() != -1) {
-			keepAngle = xbox1.DPad();
-		}
-
 		double leadNum = SmartDashboard.getNumber("leadNum", 0);
 		lead = RCW * leadNum;
 
@@ -281,8 +277,6 @@ public class Robot extends TimedRobot {
 // 		SmartDashboard.putNumber("Switch Only (mid)", 0);
 // 		SmartDashboard.putNumber("SingleScale", 0);
 
-
-
 		log = new RRLogger();
 
 		imu = new IMU();
@@ -371,7 +365,11 @@ public class Robot extends TimedRobot {
 						}
 					} else {
 						if (autoMultiScale == 1) {
-							choice = "/home/lvuser/LeftMultiScaleR.csv";
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/LeftSwitchL.csv";
+							} else {
+								choice = "/home/lvuser/LeftMultiScaleR.csv";
+							}
 						} else {
 							if (autoSameSide == 1) {
 								choice = "/home/lvuser/LeftSwitchL.csv";
@@ -399,12 +397,20 @@ public class Robot extends TimedRobot {
 						}
 					} else {
 						if (autoMultiScale == 1) {
-							choice = "/home/lvuser/LeftMultiScaleR.csv";
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/LeftMoveOnly.csv";
+							} else {
+								choice = "/home/lvuser/LeftMultiScaleR.csv";
+							}
 						} else {
 							if (autoOrderChoice == 1) {
 								choice = "/home/lvuser/LeftMoveOnly.csv";
 							} else {
-								choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+								if (autoSameSide == 1) {
+									choice = "/home/lvuser/LeftMoveOnly.csv";
+								} else {
+									choice = "/home/lvuser/LeftSwitchRScaleR.csv";
+								}
 							}
 						}
 					}
@@ -418,7 +424,11 @@ public class Robot extends TimedRobot {
 				if (switchSide == 'L') {
 					if (scaleSide == 'L') {
 						if (autoMultiScale == 1) {
-							choice = "/home/lvuser/RightMultiScaleL.csv";
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/RightMoveOnly.csv";
+							} else {
+								choice = "/home/lvuser/RightMultiScaleL.csv";
+							}
 						} else {
 							if (autoSameSide == 1) {
 								choice = "/home/lvuser/RightMoveOnly.csv";
@@ -446,7 +456,11 @@ public class Robot extends TimedRobot {
 				} else {
 					if (scaleSide == 'L') {
 						if (autoMultiScale == 1) {
-							choice = "/home/lvuser/RightMultiScaleL.csv";
+							if (autoSameSide == 1) {
+								choice = "/home/lvuser/RightSwitchR.csv";
+							} else {
+								choice = "/home/lvuser/RightMultiScaleL.csv";
+							}
 						} else {
 							if (autoSameSide == 1) {
 								choice = "/home/lvuser/RightSwitchR.csv";
@@ -511,6 +525,7 @@ public class Robot extends TimedRobot {
 	 */
 	public void autonomousPeriodic() {
 		// LABEL autonomous periodic
+		Arm.auto = true;
 
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
 
@@ -539,14 +554,13 @@ public class Robot extends TimedRobot {
 
 			case 1:
 
-				SmartDashboard.putNumber("Array Index", arrayIndex);
-				SmartDashboard.putNumber("IMU Angle", imu.getAngle());
+//				SmartDashboard.putNumber("Array Index", arrayIndex);
+//				SmartDashboard.putNumber("IMU Angle", imu.getAngle());
 
 				/*
 				 * 0 = translate speed, 1 = rotate speed, 2 = direction to translate, 3 = direction to face,
 				 * 4 = distance(in), 5 = How to accelerate(0 = no modification, 1 = transition, 2 = accelerate, 3 = decelerate)
-				 * 6 = smoothArcStartAngle, 7 = smoothArcEndAngle, 8 = how to translate(0 = line, 1 = c*tan(z*x), 2 = c*tan(z*x^2))
-				 * 9 = c, 10 = z
+				 * 6 = smoothArcStartAngle, 7 = smoothArcEndAngle
 				 * 11 = time out(seconds), 12 = imu offset
 				 *
 				 * 13 = arm position, 14 = hand position, 15  = check for havecube,
@@ -583,26 +597,14 @@ public class Robot extends TimedRobot {
 				}
 
 				if (commands[arrayIndex][6] <= 360.0 && commands[arrayIndex][6] >= 0.0) {
-					smoothArc = Math.toRadians(MathUtils.convertRange(0.0, commands[arrayIndex][4], commands[arrayIndex][6], commands[arrayIndex][7], Math.abs(currentDistance - previousDistance)));
+					smoothArc = Math.toRadians(MathUtils.convertRange(0.0, commands[arrayIndex][4], commands[arrayIndex][6], commands[arrayIndex][7], Math.abs(SmartDashboard.getNumber("Distance", 0) - previousDistance)));
 					FWD = Math.cos(smoothArc);
 					STR = Math.sin(smoothArc);
 				}
 
-				if (commands[arrayIndex][8] == 1) {
-					smoothTranslateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], -1.44, 1.44, currentDistance));
-					smoothTranslate = commands[arrayIndex][9] * Math.tan(commands[arrayIndex][10] * smoothTranslateNum);
-					FWD = Math.cos(MathUtils.resolveAngle(smoothTranslate + Math.toRadians(commands[arrayIndex][2])));
-					STR = Math.sin(MathUtils.resolveAngle(smoothTranslate + Math.toRadians(commands[arrayIndex][2])));
-				} else if (commands[arrayIndex][8] == 2) {
-					smoothTranslateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], -1.2, 1.2, currentDistance));
-					smoothTranslate = commands[arrayIndex][9] * Math.pow(Math.tan(commands[arrayIndex][10] * smoothTranslateNum),2.0);
-					FWD = Math.cos(MathUtils.resolveAngle(smoothTranslate + Math.toRadians(commands[arrayIndex][2])));
-					STR = Math.sin(MathUtils.resolveAngle(smoothTranslate + Math.toRadians(commands[arrayIndex][2])));
-				}
-
 				keepAngle = commands[arrayIndex][3];
 //				if (commands[arrayIndex][3] <= 360.0 && commands[arrayIndex][3] >= 0.0 && !turnDone) {
-				System.out.println(Math.abs(Math.abs(MathUtils.getAngleError(imu.getAngle(), commands[arrayIndex][3]))));
+//				System.out.println(Math.abs(Math.abs(MathUtils.getAngleError(imu.getAngle(), commands[arrayIndex][3]))));
 					if (Math.abs(MathUtils.getAngleError(imu.getAngle(), commands[arrayIndex][3])) < 5.0) {
 						initialAngle = imu.getAngle();
 						turnDone = true;
@@ -620,18 +622,21 @@ public class Robot extends TimedRobot {
 //				System.out.println(MathUtils.resolveDeg(commands[arrayIndex][8]-initialAngle));
 //				System.out.println(RCW);
 
+//				System.out.println("Pre-Accel FWD: " + FWD);
+//				System.out.println("Pre-Accel STR: " + STR);
+
 				if (commands[arrayIndex][5] == 1) {
-					smoothAccelerateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], commands[arrayIndex-1][0], commands[arrayIndex+1][0], currentDistance));
+					smoothAccelerateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], commands[arrayIndex][0], commands[arrayIndex+1][0], SmartDashboard.getNumber("Distance", 0)));
 					smoothAccelerate = smoothAccelerateNum;
 					FWD *= smoothAccelerate;
 					STR *= smoothAccelerate;
 				} else if (commands[arrayIndex][5] == 2) {
-					smoothAccelerateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], minSpeed, commands[arrayIndex+1][0], currentDistance));
+					smoothAccelerateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], minSpeed, commands[arrayIndex][0], SmartDashboard.getNumber("Distance", 0)));
 					smoothAccelerate = smoothAccelerateNum;
 					FWD *= smoothAccelerate;
 					STR *= smoothAccelerate;
 				} else if (commands[arrayIndex][5] == 3) {
-					smoothAccelerateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], commands[arrayIndex-1][0], minSpeed, currentDistance));
+					smoothAccelerateNum = (MathUtils.convertRange(previousDistance, previousDistance + commands[arrayIndex][4], commands[arrayIndex][0], minSpeed, SmartDashboard.getNumber("Distance", 0)));
 					 smoothAccelerate = smoothAccelerateNum;
 					FWD *= smoothAccelerate;
 					STR *= smoothAccelerate;
@@ -640,13 +645,18 @@ public class Robot extends TimedRobot {
 					STR *= tSpeed;
 				}
 
+//				System.out.println(previousDistance + " | " + previousDistance + commands[arrayIndex][4]);
+
+//				System.out.println("Post-Accel FWD: " + FWD);
+//				System.out.println("Post-Accel STR: " + STR);
+
 				Vector driveCommands;
 				driveCommands = MathUtils.convertOrientation(Math.toRadians(imu.getAngle()), FWD, STR);
 				FWD = driveCommands.getY();
 				STR = driveCommands.getX();
 				RCW *= rSpeed;
 
-				if ((Math.abs(currentDistance - previousDistance) >= commands[arrayIndex][4]) || commands[arrayIndex][4] == 0) {
+				if ((Math.abs(SmartDashboard.getNumber("Distance", 0) - previousDistance) >= commands[arrayIndex][4]) || commands[arrayIndex][4] == 0) {
 					driveDone = true;
 					STR = 0;
 					FWD = 0;
@@ -712,11 +722,13 @@ public class Robot extends TimedRobot {
 //				System.out.println("Coll: " + collisionDone);
 //				System.out.println("Time: " + timeDone);
 //				System.out.println("TimeNum: " + Time.get() + " | " + (timeBase + commands[arrayIndex][10]));
+				System.out.println("Current: " + SmartDashboard.getNumber("Distance", 0));
 
 				if (driveDone) {
 					arrayIndex++;
 					driveDone = false;
-					previousDistance = currentDistance;
+					initialAngle = imu.getAngle();
+					previousDistance = SmartDashboard.getNumber("Distance", 0);//currentDistance;
 					turnDone = false;
 					timeDone = false;
 					override = false;
@@ -748,6 +760,7 @@ public class Robot extends TimedRobot {
 	 * This function is called periodically during operator control
 	 */
 	public void teleopPeriodic() {
+
 		// LABEL teleop periodic
 		autonomous = false;
 
@@ -759,7 +772,7 @@ public class Robot extends TimedRobot {
 
 		SmartDashboard.putNumber("IMU Angle", imu.getAngle());
 		SmartDashboard.putNumber("Wrist Amps", PowerPanel.zero());
-		SmartDashboard.putNumber("Elbow Amps", PowerPanel.one());
+		SmartDashboard.putNumber("Shoulder Amps", PowerPanel.one());
 
 		SmartDashboard.putNumber("Winch1 Amps", PowerPanel.zero());
 		SmartDashboard.putNumber("Winch2 Amps", PowerPanel.one());
@@ -939,6 +952,7 @@ public class Robot extends TimedRobot {
 
 	public void robotPeriodic() {
 		currentDistance += SwerveDrivetrain.getRobotDistance();
+//		System.out.println("Robot Dist: " + SwerveDrivetrain.getRobotDistance());
 		SmartDashboard.putNumber("Distance", currentDistance);
 	}
 
